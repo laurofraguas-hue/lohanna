@@ -294,3 +294,75 @@ e o rodapé do painel registra isso, como faz o painel de referência.
 
 Só os **dados eleitorais e de aderência** (Rota A ou Rota B acima). A geometria
 deixou de ser bloqueio para 4 municípios e tem caminho definido para os outros 6.
+
+---
+
+## PAINEL-PILOTO ENTREGUE — Fabão / Uberlândia (2026-09-06)
+
+`paineis/Painel_Fabao_Uberlandia.html` — 0,68 MB, 100% offline. **Aguardando validação.**
+
+### Por que Uberlândia como piloto
+
+É o primeiro candidato da planilha que tem de fato as duas camadas (Gabriel Mendes é o
+caso degenerado, sem 2024), tem malha do IBGE com 75 bairros, e Fabão foi o vereador mais
+votado — cidade grande o bastante para ser representativa, pequena o bastante para iterar.
+
+### Ferramentas criadas (reutilizáveis para os demais)
+
+- `gerar_painel.py` — monta o objeto DATA de qualquer município/candidato.
+- `template_painel.html` + `painel.js` — estrutura e lógica, parametrizadas.
+- `montar_painel.py` — junta template + CSS + Chart.js + DATA num arquivo só.
+- `qa_painel.py` — roda a checklist do §9 em navegador real.
+
+Gerar outro painel são dois comandos:
+```bash
+python3 gerar_painel.py --municipio "<Município>" --candidato "<Apelido>" --numero <nº urna>
+python3 montar_painel.py --data dados/DATA_<cand>_<mun>.json
+```
+
+### Números conferidos
+
+| | Fonte | Painel |
+|---|---:|---:|
+| Lohanna 2022 (dedup por setor) | 5.173 | 5.173 |
+| Soma das regiões no acordeão | — | 5.173 |
+| Soma dos bairros na tabela | — | 5.173 |
+| Fabão vereador 2024 (TSE) | 14.596 | 14.596 |
+
+Camadas em objetos separados (`votes22` / `votes24`); nenhum campo soma as duas.
+
+### QA (§9)
+
+| Item | Resultado |
+|---|---|
+| Sem dependência externa | apenas o namespace XML do SVG |
+| Erros de JavaScript | 0 |
+| Requisições de rede ao abrir | 0 |
+| NaN / undefined / null / Infinity | 0 |
+| Seletor atualiza mapa + ranking + legenda | sim |
+| Mapa e tabela concordam sobre líderes | conferido em 3 pautas |
+| Responsivo ≤ 900 px | sem estouro horizontal em 900 e 380 px |
+| Rodapé com fontes por ano, data e ressalvas | sim |
+
+### Decisões metodológicas deste painel
+
+- **Unidade geográfica:** bairros do IBGE (Censo 2022), via `Bairro_Censo`, que casa 69/69.
+- **Regiões:** Uberlândia não tem regionais oficiais, então os bairros foram agrupados em
+  Centro/Norte/Sul/Leste/Oeste por ângulo e distância ao centroide da cidade (§6, opção 2).
+- **Índice:** percentil de `Valor_Ajustado` calculado dentro de cada pauta, 0–100, com as
+  faixas de cor do painel de referência. Cada par (setor, pauta) entra uma vez.
+- **Votos 2022:** deduplicados por `CD_setor` — a inflação seria de 22× sem isso.
+- **Mapa:** SVG inline puro, projeção equirretangular com correção de cosseno. Sem Leaflet,
+  o que elimina a defasagem entre camadas e economiza 147 KB.
+- **80 setores sem bairro** viraram "Não classificado" (63 votos) — preservados, não descartados.
+- **6 bairros do IBGE sem dado** ficam cinza no mapa.
+- **Cobertura:** 1.352 de 1.924 setores (70,3%) — registrado no rodapé.
+
+### O que está vazio por falta de dado
+
+- **Seção 7 (Sobreposição)** e **Frente 3 (Reciprocidade)**: exigem a camada 2024 por local
+  de votação. O bloco aparece com a explicação, em vez de ser preenchido por estimativa.
+- **Inteligência competitiva por bairro**: idem; só o recorte municipal está montado.
+
+Ambas entram sem outra mudança quando o arquivo por local de votação chegar — o painel já
+está construído sobre a unidade geográfica correta.

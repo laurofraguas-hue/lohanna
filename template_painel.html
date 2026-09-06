@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>__TITULO__</title>
+<!--CHARTJS-->
+<style>
+__CSS_BASE__
+/* ===== acréscimos deste painel ===== */
+.svgmap{width:100%;height:auto;display:block;background:#eef1f7;border-radius:8px;}
+.svgmap path{stroke:#fff;stroke-width:.6;cursor:pointer;transition:fill .15s;}
+.svgmap path:hover{stroke:#1B2A55;stroke-width:1.6;}
+.svgmap path.sel{stroke:#1B2A55;stroke-width:2.2;}
+.svgmap circle{fill:var(--pink);fill-opacity:.55;stroke:#fff;stroke-width:.7;}
+.maplegend{display:flex;flex-wrap:wrap;gap:10px;padding:10px 4px 2px;font-size:.73rem;color:var(--muted);}
+.maplegend span{display:flex;align-items:center;gap:5px;}
+.maplegend i{width:13px;height:13px;border-radius:3px;display:inline-block;}
+.tip{position:fixed;pointer-events:none;background:#1B2A55;color:#fff;padding:7px 10px;border-radius:7px;
+     font-size:.75rem;line-height:1.45;z-index:99;display:none;max-width:230px;box-shadow:0 3px 12px rgba(0,0,0,.25);}
+.tip b{color:#fff;font-size:.8rem;}
+.tip .m{color:#f6c6dd;}
+.note{border-left:4px solid #8a90a8;background:#f4f5f9;padding:10px 14px;border-radius:0 8px 8px 0;
+      font-size:.82rem;margin-bottom:10px;line-height:1.55;color:#4a5170;}
+.note b{color:var(--navy);}
+.big{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:12px;}
+.big div{background:#f7f8fc;border-radius:10px;padding:12px 14px;border-left:3px solid var(--navy);}
+.big .k{font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);}
+.big .n{font-size:1.15rem;font-weight:800;color:var(--navy);margin-top:3px;}
+.big .d{font-size:.72rem;color:var(--muted);margin-top:2px;}
+.big div.p{border-left-color:var(--pink);} .big div.p .n{color:var(--pink);}
+.yr{font-size:.62rem;font-weight:800;letter-spacing:.04em;padding:1px 6px;border-radius:8px;vertical-align:2px;}
+.y24{background:#e8ebf5;color:var(--navy);} .y22{background:#f9e1ee;color:var(--pink);}
+</style>
+</head>
+<body>
+<header>
+  <h1>__H1__</h1>
+  <span class="tag">__TAG__</span>
+  <p>__SUB__</p>
+</header>
+<div class="wrap">
+
+<div class="cards" id="cards"></div>
+
+<div class="panel" style="margin-bottom:16px;"><h2>Leituras estratégicas</h2>
+  <div class="body" id="insights"></div></div>
+
+<div class="controls">
+  <label>Pauta:</label>
+  <select id="selMetric"></select>
+  <span class="toggle"><input type="checkbox" id="showPts">
+    <label for="showPts" style="font-weight:400;color:var(--muted)">Mostrar setores (pontos)</label></span>
+</div>
+
+<div class="grid2">
+  <div class="panel"><h2 id="mapTitle">Mapa</h2><div class="body" style="padding:10px;">
+    <div id="map"></div><div class="maplegend" id="legend"></div></div></div>
+  <div class="panel"><h2 id="rkTitle">Ranking</h2><div class="body" style="height:520px"><canvas id="chReg"></canvas></div></div>
+</div>
+
+<div class="panel" style="margin-bottom:16px;" id="pV24">
+  <h2>Desempenho eleitoral — <span class="yr y24">Vereador · 2024</span></h2>
+  <div class="body" id="v24"></div>
+</div>
+
+<div class="panel" style="margin-bottom:16px;">
+  <h2>Desempenho da Lohanna — <span class="yr y22">Deputada · 2022</span> · por região e bairro</h2>
+  <div class="body">
+    <div style="margin-bottom:10px;"><label style="font-size:.83rem;color:var(--navy);font-weight:600;cursor:pointer;">
+      <input type="checkbox" id="tgCirc" checked> Mostrar círculos de votos por bairro</label></div>
+    <div class="grid2" style="margin-bottom:0;">
+      <div><div id="mapV"></div></div>
+      <div id="vAccord" style="max-height:520px;overflow:auto;"></div>
+    </div>
+  </div>
+</div>
+
+<div class="panel" style="margin-bottom:16px;" id="pOver">
+  <h2>Sobreposição das duas bases</h2><div class="body" id="over"></div>
+</div>
+
+<div class="panel" style="margin-bottom:16px;"><h2>Plano de mobilização — a lógica das duas frentes</h2>
+  <div class="body" id="mobLogica"></div></div>
+
+<div class="grid2">
+  <div class="panel" style="margin-bottom:0;"><h2>Mapa dos bairros-alvo</h2>
+    <div class="body" style="padding:8px;"><div id="mapM"></div></div></div>
+  <div style="max-height:620px;overflow:auto;" id="lists"></div>
+</div>
+
+<div class="grid2" id="charts"></div>
+
+<div class="panel" style="margin-bottom:16px;">
+  <h2>Ranking de bairros</h2>
+  <div class="body">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;align-items:center;">
+      <select id="fReg"><option value="">Todas as regiões</option></select>
+      <select id="fMin">
+        <option value="1">todos os bairros</option>
+        <option value="3">≥ 3 setores</option>
+        <option value="5" selected>≥ 5 setores</option>
+        <option value="10">≥ 10 setores</option>
+      </select>
+      <span style="font-size:.78rem;color:var(--muted)" id="countInfo"></span>
+    </div>
+    <div style="max-height:460px;overflow:auto;">
+      <table id="tb"><thead><tr id="tbHead"></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+</div>
+
+<div class="panel" style="margin-bottom:16px;">
+  <h2>Top 10 bairros por pauta <span style="font-weight:400;opacity:.8">(mínimo __MINSET__ setores)</span></h2>
+  <div class="body tops" id="tops"></div>
+</div>
+
+<div class="panel" style="margin-bottom:16px;" id="pCand">
+  <h2>Inteligência competitiva — <span class="yr y24">Vereador · 2024</span></h2>
+  <div class="body" id="cand"></div>
+</div>
+
+</div>
+<footer id="foot"></footer>
+<div class="tip" id="tip"></div>
+<script>const DATA = __DATA__;</script>
+<script>
+__JS__
+</script>
+</body>
+</html>
