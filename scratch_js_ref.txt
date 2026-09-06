@@ -1,0 +1,366 @@
+const regs=DATA.regionais, V=DATA.votes;
+const topBy=k=>[...regs].sort((a,b)=>(b[k]??-1)-(a[k]??-1))[0];
+
+document.getElementById('cards').innerHTML=`
+ <div class="card"><h3>Educação · regional líder</h3><div class="v">${topBy('educ').regional} · ${topBy('educ').educ}</div><div class="s">Ensino superior: ${topBy('sup').regional} (${topBy('sup').sup}) · universitários: bairro líder Carmo (81,9)</div></div>
+ <div class="card"><h3>Pautas LGBT</h3><div class="v">${topBy('lgbt').regional} · ${topBy('lgbt').lgbt}</div><div class="s">Bairro líder: Centro (86,6) · única pauta de direitos liderada pelo Centro-Sul</div></div>
+ <div class="card"><h3>Gênero e antirracismo</h3><div class="v">Norte · ${topBy('rac').rac}</div><div class="s">Gênero ${topBy('gen').gen} e antirracismo fortes nas periferias; bairro líder das duas: Granja de Freitas (93,0)</div></div>
+ <div class="card"><h3>Votos 2022 (sem dupla contagem)</h3><div class="v">${V.total.toLocaleString('pt-BR')}</div><div class="s">Regional líder: ${V.top_regional} (14.669) · bairro nº 1: ${V.top_bairro.nome} (${V.top_bairro.votos.toLocaleString('pt-BR')})</div></div>`;
+
+document.getElementById('insights').innerHTML=`
+<div class="insight"><b>O eixo universitário é a base — e tem endereço.</b> Educação e ensino superior concentram-se em <b>Centro-Sul (68,2 em ensino superior) → Oeste (58,0) → Pampulha (52,6)</b>, com três territórios nomeados: o anel UFMG (Carmo, Manacás, Ouro Preto, Liberdade), o eixo Estoril–Buritis (UNI-BH) e o hipercentro/Savassi. É onde a candidata já foi mais votada em 2022 (ρ votos × ensino superior = +0,44). O Centro combina 80,5 de aderência universitária com 81% de registros "Ideal": o alvo mais quente da base.</div>
+<div class="insight"><b>Direitos não é um bloco: são três públicos.</b> LGBT × gênero têm correlação <b>zero (−0,02)</b> por setor. A pauta LGBT mora no hipercentro (Centro 86,6, Barro Preto, Boa Viagem, Savassi) e faz ponte com o eixo universitário (Estoril, Manacás). Gênero (Norte 63,8) e antirracismo (Norte 69,3) moram nas periferias — Granja de Freitas, Alto Vera Cruz, Conjunto Taquaril, Pedreira Prado Lopes — e são mais fortes onde houve <b>menos</b> voto em 2022 (ρ = −0,40 e −0,53). O contraste-síntese: antirracismo marca <b>14,7 no Centro-Sul</b> contra 69,3 na Norte.</div>
+<div class="insight"><b>Votos 2022: mapa quase espelhado ao dos direitos populares.</b> Somando cada setor uma única vez, foram <b>87.162 votos</b>. Oeste (14.669), Centro-Sul (14.638) e Pampulha (13.782) concentram 49%; o Buritis sozinho deu 3.986 votos — quase o dobro do 2º (Ouro Preto, 2.222). A regional Norte, líder em gênero e antirracismo, rendeu só 3.400. A campanha 2026 tem, portanto, dois movimentos: <b>consolidar</b> o eixo universitário com pautas LGBT + ensino superior, e <b>expandir</b> na periferia com gênero + antirracismo — Granja de Freitas, único bairro no top 10 das três pautas de direitos, é o símbolo do segundo movimento.</div>`;
+
+// mapa principal
+const map=L.map('map',{attributionControl:false}).setView([-19.92,-43.95],11);
+// sem basemap externo — referência: polígonos das regionais
+let geoLayer=null, ptLayer=null;
+function drawGeo(){
+  if(geoLayer) map.removeLayer(geoLayer);
+  geoLayer=L.geoJSON(DATA.geojson,{style:f=>({fillColor:colorFor(f.properties[metric]),weight:1.6,color:'#fff',fillOpacity:.78}),
+   onEachFeature:(f,l)=>{const p=f.properties;
+    l.bindPopup(`<b style="color:${NAVY}">${p.regional}</b><br>${M_LABEL[metric]}: <b>${p[metric]??'–'}</b><br>Educação: <b>${p.educ}</b> · Ens. superior: <b>${p.sup}</b><br>LGBT: <b>${p.lgbt}</b> · Gênero: <b>${p.gen}</b> · Antirracismo: <b>${p.rac}</b><br>Votos 2022: <b>${p.votos.toLocaleString('pt-BR')}</b> · ${p.setores} setores`);
+    l.bindTooltip(p.regional,{permanent:true,direction:'center',className:'reglabel'});
+   }}).addTo(map);
+}
+function drawPts(){
+  if(ptLayer){map.removeLayer(ptLayer);ptLayer=null;}
+  if(!document.getElementById('showPts').checked) return;
+  const idx=SET_IDX[metric];
+  ptLayer=L.layerGroup(DATA.setores.filter(s=>s[idx]!=null).map(s=>
+    L.circleMarker([s[0],s[1]],{radius:3,stroke:false,fillColor:colorFor(s[idx]),fillOpacity:.78})
+     .bindTooltip(`${s[3]} · ${M_LABEL[metric]}: ${s[idx]} · Votos: ${s[2]}`)
+  )).addTo(map);
+}
+const legend=L.control({position:'bottomright'});
+legend.onAdd=()=>{const d=L.DomUtil.create('div','legend');
+ d.innerHTML='<b>Índice</b><br><i style="background:#8f1f57"></i>≥ 65 muito alta<br><i style="background:'+PINK+'"></i>57–65 alta<br><i style="background:#d97fae"></i>50–57 média-alta<br><i style="background:#aeb6d0"></i>43–50 média<br><i style="background:#5b6a99"></i>&lt; 43 baixa';return d;};
+legend.addTo(map);
+
+Chart.defaults.font.family="'Segoe UI',system-ui,sans-serif";
+Chart.defaults.color='#4a5170';
+const chReg=new Chart(document.getElementById('chReg'),{type:'bar',
+ data:{labels:[],datasets:[{data:[],backgroundColor:[],borderRadius:6}]},
+ options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${M_LABEL[metric]}: ${c.raw}`}}},
+  scales:{x:{min:0,max:80,grid:{color:'#eef0f5'}},y:{grid:{display:false}}}}});
+function updReg(){
+  const s=[...regs].sort((a,b)=>(b[metric]??-1)-(a[metric]??-1));
+  chReg.data.labels=s.map(r=>r.regional);
+  chReg.data.datasets[0].data=s.map(r=>r[metric]);
+  chReg.data.datasets[0].backgroundColor=s.map(r=>colorFor(r[metric]));
+  chReg.update();
+}
+
+// ===== votos =====
+// ===== mapa de votos: SVG inline (polígonos, rótulos e círculos numa única projeção) =====
+const vByReg=Object.fromEntries(V.regionais.map(r=>[r.regional,r.votos]));
+const vMax=Math.max(...Object.values(vByReg));
+function vColor(v){const p=v/vMax;return p>=.9?'#8f1f57':p>=.6?PINK:p>=.4?'#d97fae':p>=.25?'#aeb6d0':'#5b6a99';}
+(function(){
+  const feats=DATA.geojson.features;
+  let mnLo=1e9,mxLo=-1e9,mnLa=1e9,mxLa=-1e9;
+  function walk(c,fn){ if(typeof c[0]==='number'){fn(c);} else c.forEach(x=>walk(x,fn)); }
+  feats.forEach(f=>walk(f.geometry.coordinates,([lo,la])=>{mnLo=Math.min(mnLo,lo);mxLo=Math.max(mxLo,lo);mnLa=Math.min(mnLa,la);mxLa=Math.max(mxLa,la);}));
+  const W=700, cos=Math.cos((mnLa+mxLa)/2*Math.PI/180);
+  const k=W/((mxLo-mnLo)*cos);
+  const H=Math.ceil((mxLa-mnLa)*k)+20;
+  const X=lo=>+(((lo-mnLo)*cos*k+10).toFixed(1)), Y=la=>+(((mxLa-la)*k+10).toFixed(1));
+  function ring(r){ return r.map(([lo,la])=>X(lo)+','+Y(la)).join(' L'); }
+  let polys='', labels='';
+  feats.forEach(f=>{
+    const rg=f.properties.regional, rr=V.regionais.find(x=>x.regional===rg);
+    const lead=rg===V.top_regional;
+    const g=f.geometry, ringsets=(g.type==='Polygon')?[g.coordinates]:g.coordinates;
+    const dpath=ringsets.map(poly=>poly.map(r=>'M'+ring(r)+' Z').join(' ')).join(' ');
+    const tip=rg+(lead?' ★ regional líder':'')+' — '+rr.votos.toLocaleString('pt-BR')+' votos · '+rr.setores+' setores · bairro líder: '+rr.bairros[0].b+' ('+rr.bairros[0].v.toLocaleString('pt-BR')+')';
+    polys+='<path d="'+dpath+'" fill="'+vColor(rr.votos)+'" fill-opacity=".62" stroke="'+(lead?'#8f1f57':'#fff')+'" stroke-width="'+(lead?3:1.6)+'"><title>'+tip+'</title></path>';
+    const outer=(g.type==='Polygon')?g.coordinates[0]:g.coordinates[0][0];
+    let sx=0,sy=0; outer.forEach(([lo,la])=>{sx+=X(lo);sy+=Y(la);});
+    const cx=(sx/outer.length).toFixed(0), cy=(sy/outer.length).toFixed(0);
+    labels+='<text x="'+cx+'" y="'+cy+'" text-anchor="middle" font-size="11.5" font-weight="800" fill="#1B2A55" stroke="#fff" stroke-width="3" paint-order="stroke" font-family="Segoe UI,sans-serif">'+rg+'</text>'+
+            '<text x="'+cx+'" y="'+(+cy+13)+'" text-anchor="middle" font-size="10.5" font-weight="700" fill="#8f1f57" stroke="#fff" stroke-width="3" paint-order="stroke" font-family="Segoe UI,sans-serif">'+rr.votos.toLocaleString('pt-BR')+'</text>';
+  });
+  const vCircMax=Math.max(...V.circ.map(c=>c[2]));
+  let circs='';
+  V.circ.forEach(c=>{
+    const isTop=c[3]===V.top_bairro.nome;
+    const r=(2+Math.sqrt(c[2]/vCircMax)*16).toFixed(1);
+    circs+='<circle cx="'+X(c[1])+'" cy="'+Y(c[0])+'" r="'+r+'" fill="'+(isTop?'#8f1f57':NAVY)+'" fill-opacity=".55" stroke="'+(isTop?'#8f1f57':'#fff')+'" stroke-width="'+(isTop?2.5:1)+'"><title>'+c[3]+' ('+c[4]+'): '+c[2].toLocaleString('pt-BR')+' votos</title></circle>';
+  });
+  document.getElementById('mapV').innerHTML =
+   '<svg viewBox="0 0 '+(W+20)+' '+H+'" style="width:100%;height:auto;background:#e9edf5;border-radius:8px;" xmlns="http://www.w3.org/2000/svg">'+
+   polys+'<g id="gCirc">'+circs+'</g>'+labels+
+   '<g font-family="Segoe UI,sans-serif"><rect x="'+(W-190)+'" y="'+(H-78)+'" width="200" height="68" rx="8" fill="#fff" opacity=".95"/>'+
+   '<text x="'+(W-178)+'" y="'+(H-60)+'" font-size="11.5" font-weight="800" fill="#1B2A55">Votos 2022</text>'+
+   '<text x="'+(W-178)+'" y="'+(H-45)+'" font-size="10.5" fill="#22283b">Cor da regional = total de votos</text>'+
+   '<text x="'+(W-178)+'" y="'+(H-31)+'" font-size="10.5" fill="#22283b">C\u00edrculo = votos do bairro</text>'+
+   '<circle cx="'+(W-172)+'" cy="'+(H-14)+'" r="6" fill="#8f1f57"/><text x="'+(W-162)+'" y="'+(H-10)+'" font-size="10.5" fill="#22283b">Buritis: bairro l\u00edder</text></g>'+
+   '</svg>';
+  document.getElementById('tgCirc').onchange=e=>{document.getElementById('gCirc').style.display=e.target.checked?'':'none';};
+})();
+document.getElementById('vAccord').innerHTML=
+ `<div style="font-size:.8rem;color:var(--muted);margin-bottom:8px;">Total: <b style="color:var(--navy)">${V.total.toLocaleString('pt-BR')} votos</b> em ${V.regionais.reduce((s,r)=>s+r.setores,0)} setores · clique na regional para ver os bairros (do mais ao menos votado)</div>`+
+ V.regionais.map((r,i)=>{
+  const lead=r.regional===V.top_regional;
+  return `<div class="vreg${lead?' lead':''}${i===0?' open':''}" id="vr${i}">
+   <div class="vhead" onclick="document.getElementById('vr${i}').classList.toggle('open')">
+     <span class="nm">${r.regional}${lead?' <span class="badge">LÍDER</span>':''}</span>
+     <span class="vb"><i style="width:${(r.votos/vMax*100).toFixed(1)}%"></i></span>
+     <span class="vt">${r.votos.toLocaleString('pt-BR')}</span>
+     <span class="cx">${r.bairros.length} bairros</span>
+   </div>
+   <div class="vlist">${r.bairros.map((b,j)=>{
+     const l2=b.b===V.top_bairro.nome;
+     return `<div class="vrow${l2?' lead2':''}"><span class="n">${j+1}</span><span class="b">${b.b}${l2?' <span class="badge">BAIRRO Nº1</span>':''}</span><span class="bar2" style="width:${Math.max(2,(b.v/r.bairros[0].v*90)).toFixed(0)}px"></span><span class="v">${b.v.toLocaleString('pt-BR')}</span></div>`;
+   }).join('')}</div></div>`;
+ }).join('');
+
+// ===== educação (5 pautas) =====
+const EBK=DATA.edu_break;
+const eduColors=['#1B2A55','#C13B7E','#5b6a99','#d97fae','#8f1f57'];
+new Chart(document.getElementById('chEduB'),{type:'bar',
+ data:{labels:EBK.regionais,datasets:EBK.vars.map((v,i)=>({label:v.length>34?v.slice(0,34)+'…':v,data:EBK.values.map(r=>r[i]),backgroundColor:eduColors[i%5],borderRadius:3}))},
+ options:{plugins:{legend:{position:'bottom',labels:{boxWidth:11,font:{size:10}}}},scales:{y:{min:0,max:90,grid:{color:'#eef0f5'}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
+
+// ===== direitos (3 pautas) =====
+const IGR=[...regs].sort((a,b)=>b.rac-a.rac);
+new Chart(document.getElementById('chIg'),{type:'bar',
+ data:{labels:IGR.map(r=>r.regional),datasets:[
+  {label:'LGBT',data:IGR.map(r=>r.lgbt),backgroundColor:NAVY,borderRadius:3},
+  {label:'Gênero',data:IGR.map(r=>r.gen),backgroundColor:PINK,borderRadius:3},
+  {label:'Antirracismo',data:IGR.map(r=>r.rac),backgroundColor:'#d97fae',borderRadius:3}]},
+ options:{plugins:{legend:{position:'bottom',labels:{boxWidth:11}}},
+  scales:{y:{min:0,max:80,grid:{color:'#eef0f5'}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
+
+// ===== dispersões =====
+const sb=DATA.bairros.filter(b=>b.setores>=5 && b.univ!=null && b.rac!=null);
+new Chart(document.getElementById('chSct'),{type:'scatter',
+ data:{datasets:[{data:sb.map(b=>({x:b.univ,y:b.rac,r:Math.min(3+b.setores/6,10),b:b.Bairro,rg:b.regional})),
+  backgroundColor:sb.map(b=>b.rac>=60&&b.univ<60?PINK: b.univ>=60&&b.rac<60?NAVY: b.rac>=60&&b.univ>=60?'#8f1f57':'#aeb6d0'),
+  pointRadius:c=>c.raw.r,pointHoverRadius:c=>c.raw.r+2}]},
+ options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw.b} (${c.raw.rg}) · universitários: ${c.raw.x} · antirracismo: ${c.raw.y}`}}},
+  scales:{x:{title:{display:true,text:'Aderência – universitários / campus'},min:0,max:100,grid:{color:'#eef0f5'}},
+          y:{title:{display:true,text:'Sensibilidade ao antirracismo'},min:0,max:100,grid:{color:'#eef0f5'}}}}});
+
+const vab=DATA.bairros.filter(b=>b.setores>=5 && b.sup!=null);
+new Chart(document.getElementById('chVA'),{type:'scatter',
+ data:{datasets:[{data:vab.map(b=>({x:b.sup,y:Math.max(b.votos,1),b:b.Bairro,rg:b.regional,v:b.votos})),
+  backgroundColor:vab.map(b=>b.votos>=1000?PINK:b.sup>=60?'#8f1f57':'#aeb6d0'),pointRadius:4,pointHoverRadius:6}]},
+ options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw.b} (${c.raw.rg}) · ens. superior ${c.raw.x} · ${c.raw.v.toLocaleString('pt-BR')} votos`}}},
+  scales:{x:{title:{display:true,text:'Índice de aderência – ensino superior'},min:0,max:100,grid:{color:'#eef0f5'}},
+          y:{title:{display:true,text:'Votos 2022 (escala log)'},type:'logarithmic',grid:{color:'#eef0f5'}}}}});
+
+// ===== tabela =====
+const fReg=document.getElementById('fReg');
+[...new Set(DATA.bairros.map(b=>b.regional))].sort().forEach(r=>fReg.appendChild(new Option(r,r)));
+let sortK='educ', sortD=-1;
+function pill(v){if(v==null)return '<span class="pill pB">–</span>';const c=v>=60?'pA':v>=45?'pM':'pB';return `<span class="pill ${c}">${v}</span>`;}
+function drawTable(){
+  const min=+document.getElementById('fMin').value, rg=fReg.value;
+  let rows=DATA.bairros.filter(b=>b.setores>=min && (!rg||b.regional===rg));
+  rows.sort((a,b)=>{const x=a[sortK]??-1,y=b[sortK]??-1;return (x<y?-1:x>y?1:0)*sortD;});
+  document.getElementById('countInfo').textContent=`${rows.length} bairros`;
+  document.querySelector('#tb tbody').innerHTML=rows.map(b=>`<tr>
+   <td><b>${b.Bairro}</b></td><td style="color:var(--muted)">${b.regional}</td>
+   <td>${pill(b.educ)}</td><td>${pill(b.sup)}</td><td>${pill(b.univ)}</td>
+   <td>${pill(b.lgbt)}</td><td>${pill(b.gen)}</td><td>${pill(b.rac)}</td>
+   <td>${b.votos.toLocaleString('pt-BR')}</td><td style="color:var(--muted)">${b.setores}</td></tr>`).join('');
+  document.querySelectorAll('#tb th').forEach(th=>{const a=th.querySelector('.arr'); if(a) a.textContent=th.dataset.k===sortK?(sortD===-1?'▼':'▲'):'';});
+}
+document.querySelectorAll('#tb th[data-k]').forEach(th=>th.onclick=()=>{
+  if(sortK===th.dataset.k) sortD*=-1; else {sortK=th.dataset.k;sortD=['Bairro','regional'].includes(th.dataset.k)?1:-1;}
+  drawTable();
+});
+fReg.onchange=drawTable;
+document.getElementById('fMin').onchange=drawTable;
+
+// ===== top 10 =====
+const TN={univ:'Universitários / campus',lgbt:'Pautas LGBT',gen:'Igualdade de gênero',rac:'Antirracismo'};
+document.getElementById('tops').innerHTML=['univ','lgbt','gen','rac'].map(k=>`
+ <div class="topcol"><h4>${TN[k]}</h4><ol>${DATA.tops[k].map(t=>
+  `<li><b>${t.b}</b><span class="rg">${t.reg} · ${t.s} set.</span>${pill(t.i)}</li>`).join('')}</ol></div>`).join('');
+
+// ===== switching =====
+document.getElementById('selMetric').onchange=e=>{
+  metric=e.target.value;
+  document.getElementById('mapTitle').textContent='Mapa – Regionais · '+M_LABEL[metric];
+  drawGeo(); drawPts(); updReg();
+  if(SET_IDX[metric]!==undefined && ['educ','sup','univ','lgbt','gen','rac','ig'].includes(metric)){sortK=metric;sortD=-1;}
+  drawTable();
+};
+document.getElementById('showPts').onchange=drawPts;
+
+drawGeo(); updReg(); drawTable();
+
+// ===== mobilização =====
+const MOB=DATA.mob;
+const ANC={'Savassi':'Praça da Savassi fim de tarde; <em>circuito de bares qui–sáb</em>','Castelo':'Comércio local; vizinho do campus UFMG','Centro':'Praça Sete e Praça da Estação; <em>hora do almoço</em>','Buritis':'Av. Mário Werneck; UNI-BH Estoril; <em>maior colégio da base (3.986 votos)</em>','Cidade Nova':'Comércio / eixo Cristiano Machado','Coração Eucarístico':'Imediações PUC Minas','Lourdes':'Região comercial e hospitalar','Boa Viagem':'Entorno da Praça da Boa Viagem','Santo Agostinho':'Eixo Barro Preto–hospitais','Liberdade':'Portaria UFMG; <em>RU e fluxo estudantil</em>','Fernão Dias':'Comércio local','Silveira':'Conexão Cidade Nova','Granja de Freitas':'<em>Nº1 em gênero E antirracismo (93/93)</em>; via associação de moradores','Vila Sumaré':'Casa a casa com referência local','Conjunto Capitão Eduardo':'Feira e eventos do conjunto','Nossa Senhora da Conceição':'<em>Aglomerado da Serra</em> — coletivos culturais','Conjunto Paulo VI':'Feira; lideranças de mulheres','Novo Tupi':'Feiras da regional Norte','Marçola':'<em>Aglomerado da Serra</em> — atividade cultural aos domingos','Vila CEMIG':'Entorno Estação Diamante','Zilah Spósito':'Feiras e escolas; lideranças femininas','Mariano de Abreu':'Conexão Alto Vera Cruz','Pedreira Prado Lopes':'Quadras e rádio comunitária','Capitão Eduardo':'Feira local; pauta ambiental (Onça)'};
+// ===== mapa de mobilização: SVG inline (uma única projeção para tudo) =====
+(function(){
+  const feats=DATA.geojson.features;
+  let mnLo=1e9,mxLo=-1e9,mnLa=1e9,mxLa=-1e9;
+  function walk(c,fn){ if(typeof c[0]==='number'){fn(c);} else c.forEach(x=>walk(x,fn)); }
+  feats.forEach(f=>walk(f.geometry.coordinates,([lo,la])=>{mnLo=Math.min(mnLo,lo);mxLo=Math.max(mxLo,lo);mnLa=Math.min(mnLa,la);mxLa=Math.max(mxLa,la);}));
+  const W=700, cos=Math.cos((mnLa+mxLa)/2*Math.PI/180);
+  const k=W/((mxLo-mnLo)*cos);
+  const H=Math.ceil((mxLa-mnLa)*k)+20;
+  const X=lo=>((lo-mnLo)*cos*k+10).toFixed(1), Y=la=>((mxLa-la)*k+10).toFixed(1);
+  function ring(r){ return r.map(([lo,la])=>X(lo)+','+Y(la)).join(' '); }
+  let polys='', labels='';
+  feats.forEach(f=>{
+    const g=f.geometry, rings=(g.type==='Polygon')?[g.coordinates]:g.coordinates;
+    rings.forEach(poly=>{ polys+='<path d="'+poly.map(r=>'M'+ring(r).replace(/ /g,' L')+' Z').join(' ')+'" fill="#f7f8fb" stroke="#b8c0d6" stroke-width="1.4"><title>'+f.properties.regional+'</title></path>'; });
+    // rótulo no centroide aproximado (média do anel externo)
+    const outer=(g.type==='Polygon')?g.coordinates[0]:g.coordinates[0][0];
+    let sx=0,sy=0; outer.forEach(([lo,la])=>{sx+=+X(lo);sy+=+Y(la);});
+    labels+='<text x="'+(sx/outer.length).toFixed(0)+'" y="'+(sy/outer.length).toFixed(0)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#8a90a8" font-family="Segoe UI,sans-serif">'+f.properties.regional+'</text>';
+  });
+  function marks(list,color){
+    return list.map((tg,i)=>{
+      const x=X(tg.lon), y=Y(tg.lat);
+      const tip=(i+1)+'. '+tg.b+' ('+tg.reg+') — score '+tg.score+' · '+tg.votos.toLocaleString('pt-BR')+' votos 2022';
+      return '<g style="cursor:default"><circle cx="'+x+'" cy="'+y+'" r="11" fill="'+color+'" stroke="#fff" stroke-width="2"/><text x="'+x+'" y="'+(+y+3.6)+'" text-anchor="middle" font-size="10.5" font-weight="800" fill="#fff" font-family="Segoe UI,sans-serif">'+(i+1)+'</text><title>'+tip+'</title></g>';
+    }).join('');
+  }
+  document.getElementById('mapM').innerHTML =
+   '<svg viewBox="0 0 '+(W+20)+' '+H+'" style="width:100%;height:auto;background:#e9edf5;border-radius:8px;" xmlns="http://www.w3.org/2000/svg">'+
+   polys+labels+marks(MOB.cons,NAVY)+marks(MOB.exp,PINK)+
+   '<g font-family="Segoe UI,sans-serif"><rect x="'+(W-158)+'" y="'+(H-64)+'" width="168" height="54" rx="8" fill="#fff" opacity=".95"/><circle cx="'+(W-142)+'" cy="'+(H-46)+'" r="7" fill="'+NAVY+'"/><text x="'+(W-130)+'" y="'+(H-42)+'" font-size="11" fill="#22283b"><tspan font-weight="700">Consolidação</tspan> (12)</text><circle cx="'+(W-142)+'" cy="'+(H-26)+'" r="7" fill="'+PINK+'"/><text x="'+(W-130)+'" y="'+(H-22)+'" font-size="11" fill="#22283b"><tspan font-weight="700">Expansão</tspan> (12)</text></g>'+
+   '</svg>';
+})();
+function mobRows(list){return list.map((tg,i)=>`<div class="trow"><span class="n">${i+1}</span><span class="info"><b>${tg.b}</b><span class="rg">${tg.reg} · ${tg.votos.toLocaleString('pt-BR')} votos 2022</span><div class="anc">${ANC[tg.b]||''}</div></span><span class="sc">${tg.score}</span></div>`).join('');}
+document.getElementById('lists').innerHTML=
+ `<div class="front cons"><h3>Frente Consolidação <span class="sub">· base universitária/LGBT + votos</span></h3>${mobRows(MOB.cons)}</div>
+  <div class="front exp"><h3>Frente Expansão <span class="sub">· gênero/antirracismo + território novo</span></h3>${mobRows(MOB.exp)}</div>`;
+
+
+// garante alinhamento dos panes após layout final (correção do deslocamento entre camadas)
+function fixSizes(){[map].forEach(m=>{try{m.invalidateSize(false);}catch(e){}});}
+window.addEventListener('load',()=>{setTimeout(fixSizes,150);setTimeout(fixSizes,800);});
+window.addEventListener('resize',fixSizes);
+document.addEventListener('visibilitychange',fixSizes);
+
+
+// ================= SEÇÃO CONCORRÊNCIA (TSE 2022) =================
+(function(){
+  const D=DATA.cand, NV='#1B2A55', PK='#C13B7E';
+  const PROG=new Set(['PT','PSOL','PDT','PV','Rede','PSB','PCdoB','UP','PSTU','PCB','PCO']);
+  const DIR=['PL','Republicanos','Patriota','Novo','PTB','PSC','DC','PRTB'];
+  const fmt=n=>n.toLocaleString('pt-BR');
+  const ptClass=p=>PROG.has(p)?'esq':(DIR.includes(p)?'dir':'');
+  const bs=D.bairros, CG={fed:'Deputado Federal',est:'Deputado Estadual'};
+  let cargo='est', recorte='all';
+
+  document.getElementById('cWarn').innerHTML='<b>Atenção — divergência de base nesta seção.</b> Os votos de 2022 mostrados no restante deste painel vêm da planilha original, cuja coluna <i>Votos_Candidato</i> repetia em cada setor censitário o total do local de votação mais próximo (inflando a soma ~11×). Os números <b>desta seção vêm direto do TSE</b>: Lohanna teve <b>'+fmt(D.total_loh)+' votos em BH em 2022, para deputada estadual</b> (nº 43500, PV). Onde houver conflito, vale o dado do TSE.';
+  document.getElementById('cInsight').innerHTML='<b>O eleitorado dos bairros-fortes é o eleitorado de Duda, Célia, Patrus e Rogério.</b> Nos 20 bairros onde Lohanna foi mais votada, o pódio progressista para federal é praticamente o mesmo em todos: Duda Salabert (PDT) em 2º geral, seguida de Célia Xakriabá (PSOL), com Patrus e Rogério Correia (PT) na sequência. Nikolas Ferreira (PL) lidera em todos os 20, mas é fenômeno de outro campo. O dado operacional é o <b>teto</b>: em Lourdes, Duda teve 1.827 votos e Lohanna 206 — há muito mais eleitorado alinhado do que voto capturado.';
+
+  // ---- mapa coroplético por bairro ----
+  (function(){
+    const feats=D.bairros_geo.features, rgs=D.reg_geo.features;
+    let mnLo=1e9,mxLo=-1e9,mnLa=1e9,mxLa=-1e9;
+    function walk(c,fn){ if(typeof c[0]==='number'){fn(c);} else c.forEach(x=>walk(x,fn)); }
+    rgs.forEach(f=>walk(f.geometry.coordinates,([lo,la])=>{mnLo=Math.min(mnLo,lo);mxLo=Math.max(mxLo,lo);mnLa=Math.min(mnLa,la);mxLa=Math.max(mxLa,la);}));
+    const W=640, cos=Math.cos((mnLa+mxLa)/2*Math.PI/180), k=W/((mxLo-mnLo)*cos), H=Math.ceil((mxLa-mnLa)*k)+20;
+    const X=lo=>+(((lo-mnLo)*cos*k+10).toFixed(1)), Y=la=>+(((mxLa-la)*k+10).toFixed(1));
+    const ring=r=>r.map(([lo,la])=>X(lo)+','+Y(la)).join(' L');
+    const dpath=g=>((g.type==='Polygon')?[g.coordinates]:g.coordinates).map(p=>p.map(r=>'M'+ring(r)+' Z').join(' ')).join(' ');
+    const col=v=>v<=0?'#f7f8fb':v<25?'#f3dbe7':v<50?'#e9b4cf':v<100?'#d97fae':v<150?PK:'#8f1f57';
+    let s='';
+    feats.forEach(f=>{ s+='<path d="'+dpath(f.geometry)+'" fill="'+col(f.properties.loh)+'" stroke="#fff" stroke-width=".7"><title>'+f.properties.bairro+': '+f.properties.loh+' votos (Lohanna, 2022)</title></path>'; });
+    rgs.forEach(f=>{ s+='<path d="'+dpath(f.geometry)+'" fill="none" stroke="#1B2A55" stroke-width="1.4" opacity=".7"/>'; });
+    const byName=Object.fromEntries(feats.map(f=>[f.properties.bairro,f]));
+    bs.forEach((b,i)=>{
+      const f=byName[b.bairro]; let cx,cy;
+      if(f){ const o=(f.geometry.type==='Polygon')?f.geometry.coordinates[0]:f.geometry.coordinates[0][0]; let sx=0,sy=0; o.forEach(([lo,la])=>{sx+=X(lo);sy+=Y(la);}); cx=sx/o.length; cy=sy/o.length; }
+      else if(b.lat){ cx=X(b.lon); cy=Y(b.lat); } else return;
+      s+='<g><circle cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="9" fill="'+NV+'" stroke="#fff" stroke-width="1.5"/><text x="'+cx.toFixed(1)+'" y="'+(cy+3.3).toFixed(1)+'" text-anchor="middle" font-size="9" font-weight="800" fill="#fff" font-family="Segoe UI,sans-serif">'+(i+1)+'</text><title>'+(i+1)+'. '+b.bairro+' ('+b.regional+') — Lohanna '+b.loh+' votos · 1º federal: '+b.fed[0].nome+'</title></g>';
+    });
+    const L=[['#f7f8fb','0'],['#f3dbe7','1–24'],['#e9b4cf','25–49'],['#d97fae','50–99'],[PK,'100–149'],['#8f1f57','150+']];
+    let leg='<rect x="'+(W-150)+'" y="'+(H-118)+'" width="160" height="108" rx="8" fill="#fff" opacity=".95"/><text x="'+(W-140)+'" y="'+(H-100)+'" font-size="11" font-weight="800" fill="#1B2A55" font-family="Segoe UI,sans-serif">Votos Lohanna 2022</text>';
+    L.forEach(([c,l],i)=>{ leg+='<rect x="'+(W-140)+'" y="'+(H-92+i*13)+'" width="12" height="10" fill="'+c+'" stroke="#ccc" stroke-width=".5"/><text x="'+(W-123)+'" y="'+(H-83+i*13)+'" font-size="9.5" fill="#22283b" font-family="Segoe UI,sans-serif">'+l+'</text>'; });
+    document.getElementById('cSvgmap').innerHTML='<svg viewBox="0 0 '+(W+20)+' '+H+'" style="background:#e9edf5;border-radius:8px;" xmlns="http://www.w3.org/2000/svg">'+s+leg+'</svg><p style="font-size:.72rem;color:var(--muted);margin-top:6px;">Polígonos: OpenStreetMap (460 bairros) · contorno escuro = regionais · números = ranking dos 20 bairros-fortes</p>';
+  })();
+
+  // ---- gráficos da cidade ----
+  const mk=id=>new Chart(document.getElementById(id),{type:'bar',data:{labels:[],datasets:[{data:[],backgroundColor:[],borderRadius:5}]},
+    options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)+' votos'}}},scales:{x:{grid:{color:'#eef0f5'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
+  const ch1=mk('cChCity'), ch2=mk('cChCity2');
+  function fill(ch,cg){
+    const list=recorte==='prog'?D[cg+'_prog_city']:D[cg+'_city'];
+    ch.data.labels=list.map(c=>c.nome+' ('+c.partido+')');
+    ch.data.datasets[0].data=list.map(c=>c.votos);
+    ch.data.datasets[0].backgroundColor=list.map(c=>c.nr==='43500'?PK:(PROG.has(c.partido)?'#d97fae':NV));
+    ch.update();
+  }
+  function updCity(){
+    const cg1=cargo==='both'?'fed':cargo;
+    fill(ch1,cg1);
+    document.getElementById('cCityTitle').textContent='Mais votados em BH · '+CG[cg1]+(recorte==='prog'?' · campo progressista':'');
+    const w=document.getElementById('cCity2wrap');
+    if(cargo==='both'){ w.style.display='block'; fill(ch2,'est'); } else w.style.display='none';
+  }
+  // ---- grade de bairros ----
+  function rowsOf(list){
+    const mx=list[0].votos;
+    return list.map((c,j)=>'<div class="crow"><span class="n">'+(j+1)+'</span><span class="nm" title="'+c.nome+'">'+c.nome+'</span><span class="pt '+ptClass(c.partido)+'">'+c.partido+'</span><span class="bar" style="width:'+Math.max(3,c.votos/mx*55).toFixed(0)+'px;'+(c.nr==='43500'?'background:'+PK+';opacity:1':'')+'"></span><span class="v">'+fmt(c.votos)+'</span><span class="pc">'+c.pct+'%</span></div>').join('');
+  }
+  function updGrid(){
+    const g=document.getElementById('cGrid');
+    g.classList.toggle('wide', cargo==='both');
+    const ttl=cargo==='both'?'Federal e Estadual 2022, lado a lado':CG[cargo]+' 2022';
+    document.getElementById('cGridTitle').textContent='Candidatos mais votados em cada bairro-forte · '+ttl+(recorte==='prog'?' · só campo progressista':'');
+    g.innerHTML=bs.map((b,i)=>{
+      const head='<h4><span>'+(i+1)+'. '+b.bairro+'</span><span class="rg">'+b.regional+'</span></h4><div class="loh">Lohanna 2022: '+b.loh+' votos ('+b.loh_pct+'% dos nominais p/ estadual)</div>';
+      if(cargo==='both'){
+        const lf=recorte==='prog'?b.fed_prog:b.fed, le=recorte==='prog'?b.est_prog:b.est;
+        return '<div class="bcard">'+head+'<div class="cols"><div><div class="colh">Deputado Federal</div>'+rowsOf(lf)+'</div><div><div class="colh">Deputado Estadual</div>'+rowsOf(le)+'</div></div></div>';
+      }
+      return '<div class="bcard">'+head+rowsOf(recorte==='prog'?b[cargo+'_prog']:b[cargo])+'</div>';
+    }).join('');
+  }
+  document.querySelector('#cTbReg tbody').innerHTML=D.regionais.map(r=>'<tr><td><b>'+r.regional+'</b></td><td style="color:'+PK+';font-weight:700">'+fmt(r.loh)+'</td>'+r.fed.map(c=>'<td>'+c.nome+' <span style="color:var(--muted);font-size:.72rem">('+c.partido+') '+fmt(c.votos)+'</span></td>').join('')+'</tr>').join('');
+  document.querySelectorAll('.ctab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.ctab').forEach(x=>x.classList.remove('on'));b.classList.add('on');cargo=b.dataset.c;updCity();updGrid();});
+  document.querySelectorAll('.cfilter .metricbtn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.cfilter .metricbtn').forEach(x=>x.classList.remove('on'));b.classList.add('on');recorte=b.dataset.r;updCity();updGrid();});
+  updCity(); updGrid();
+})();
+
+// ===== recolher/expandir manual e circuito =====
+document.querySelectorAll('.panel h2.tog').forEach(h=>h.onclick=()=>{
+  const p=document.getElementById(h.dataset.t);
+  p.classList.toggle('collapsed');
+  h.querySelector('.chev').textContent=p.classList.contains('collapsed')?'mostrar':'ocultar';
+  syncOpsBtn(); if(typeof syncCandBtn==='function') syncCandBtn();
+});
+const opsIds=['pManual','pCircuito'];
+const candId='pCand';
+function syncOpsBtn(){
+  const anyOpen=opsIds.some(id=>!document.getElementById(id).classList.contains('collapsed'));
+  const b=document.getElementById('btnOps');
+  b.textContent=anyOpen?'Ocultar manual e circuito':'Mostrar manual e circuito';
+  b.classList.toggle('on',anyOpen);
+}
+document.getElementById('btnCand').onclick=()=>{
+  const p=document.getElementById(candId), open=!p.classList.contains('collapsed');
+  p.classList.toggle('collapsed',open);
+  p.querySelector('.chev').textContent=open?'mostrar':'ocultar';
+  syncCandBtn();
+};
+function syncCandBtn(){
+  const p=document.getElementById(candId), open=!p.classList.contains('collapsed');
+  const b=document.getElementById('btnCand');
+  b.textContent=open?'Ocultar seção':'Mostrar seção';
+  b.classList.toggle('on',open);
+}
+document.getElementById('btnOps').onclick=()=>{
+  const anyOpen=opsIds.some(id=>!document.getElementById(id).classList.contains('collapsed'));
+  opsIds.forEach(id=>{
+    const p=document.getElementById(id);
+    p.classList.toggle('collapsed',anyOpen);
+    p.querySelector('.chev').textContent=anyOpen?'mostrar':'ocultar';
+  });
+  syncOpsBtn();
+};
+</script>
+</body>
+</html>
