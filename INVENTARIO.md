@@ -306,3 +306,136 @@ Testado de ponta a ponta com dados sintéticos no formato do TSE (CSV `;`, latin
 zip). Conferências que passaram: totais por município exatos, seções deduplicadas via
 `QT_SECOES`, cargos e municípios corretamente filtrados, detecção de colunas tolerante a
 variação de nome (nada é presumido — se não encontra, avisa em vez de adivinhar).
+
+---
+
+# ADENDO 2 — Tabelas de oportunidade (aderência a pautas), 5 municípios
+
+Recebidas por anexo: Lagoa Santa, Mariana, Pará de Minas, São João del-Rei, Uberlândia.
+Total 9,3 MB. Schema **idêntico nos cinco**: 1 aba por município, **52 colunas**.
+
+## B.1 O que a tabela é
+
+É a mesma estrutura que gerou o painel de referência (`Lohanna_BH.xlsx`). Colunas que
+importam:
+
+| Grupo | Colunas |
+|---|---|
+| Identificação | `Município`, `UF`, **`Ano`**, **`Candidato`** |
+| Pauta | **`Variável`**, `Classificação` |
+| Geografia | `CD_setor`, `CD_MUN`, `Bairro`, **`Bairro_Censo`**, `Latitude_Setor`, `Longitude_Setor`, `Latitude`, `Longitude` |
+| Índice | `Valor_Bruto`, `Peso_Moradores`, **`Valor_Ajustado`**, `Quartil_Fundo`, `XG` |
+| Votos | **`Votos_Candidato`**, `Q1/Q2/Q3_Votos_Base`, `Distancia_Urna_Setor_m` |
+| Endereço/CNEFE | `CEP`, `Rua`, `Numero_Endereco`, `Codigo_Unico_Endereco_CNEFE`, `Metodo_Correspondencia`, `Nivel_Geocodificacao_CNEFE`, `Status_Endereco`, `Fonte_Endereco` |
+| Contexto municipal | `Total_Setores_Município`, `Qtd/Percentual_Ideal/Subideal/Base_Município` |
+
+`Valor_Ajustado` é o insumo do índice — o rodapé do painel de referência diz
+"Índice = percentil médio do valor ajustado, normalizado por pauta". A normalização
+percentílica 0–100 do §3.2.2 se aplica sobre ele.
+
+## B.2 A camada da Lohanna 2022 tem fonte — e é esta
+
+`Candidato` = **LOHANNA SOUZA FRANÇA MOREIRA DE OLIVEIRA** · `Ano` = **2022**, em todos.
+
+Com `Votos_Candidato` por **setor censitário**, a camada 2022 é geográfica de verdade e
+agregável a bairro. Isso confirma, por uma segunda fonte independente, o que o
+`votacao_secao_2022_MG.zip` já indicava — e torna a **seção 7 (Sobreposição das duas
+bases)** e a frente de **Reciprocidade** plenamente viáveis.
+
+## B.3 A armadilha do §3.2.1 — confirmada, medida, pior que o previsto
+
+`Votos_Candidato` **repete o mesmo valor em cada linha do setor**. Verificado: em todos
+os municípios, **zero setores** têm mais de um valor distinto de `Votos_Candidato`.
+
+Como há uma linha por (setor, variável) — 22 pautas —, somar ingenuamente multiplica o
+total por ~20×. Medido:
+
+| Município | Soma ingênua | **Soma correta** (1 setor = 1 vez) | Inflação |
+|---|---:|---:|---:|
+| Lagoa Santa | 14.514 | **772** | 18,8× |
+| Mariana | 15.543 | **637** | 24,4× |
+| Pará de Minas | 77.749 | **3.830** | 20,3× |
+| São João del-Rei | 42.064 | **1.737** | 24,2× |
+| Uberlândia | 113.987 | **5.173** | 22,0× |
+
+O comando alertava para ~11× em BH; aqui é **19× a 24×**. A regra vale integralmente:
+**deduplicar por `CD_setor` antes de qualquer soma.**
+
+Esses totais ainda precisam ser conferidos contra o total oficial do TSE de 2022 por
+município (item do QA §9), o que depende dos dados eleitorais ainda não recebidos.
+
+## B.4 As 22 pautas são as mesmas nos cinco municípios
+
+**8 eixos, 22 pautas, idênticos em todos** — ao contrário do que a coluna `Interesses` da
+planilha de candidatos sugeria. Aquela coluna diz quais pautas **enfatizar** em cada
+painel, não quais existem. Isso simplifica: o seletor de métrica da seção 4 é o mesmo
+para todos, e o recorte por candidato vira ordenação/destaque, não estrutura.
+
+| Eixo | Pautas |
+|---|---|
+| **Educação** | 5 — alta escolaridade · escolaridade média · universitários/campus · pós-graduação · técnico e superior |
+| **Saúde** | 5 — atenção primária/UBS · pré-natal/parto/pediatria · diferenças de acesso · queixa de falta de médico · alta demanda por UBS |
+| **Demografia por Sexo e Idade** | 4 — mulheres 15–19 · 20–24 · 25–29 · 30–34 |
+| **Igualdade e Direitos** | 3 — LGBT/tolerância · igualdade de gênero · antirracismo/equidade racial |
+| **Família e Cuidado** | 2 — lares chefiados por mulheres · alta demanda por creche |
+| **Comportamento e Rotina** | 1 — predominância de Instagram, consumo visual, influenciadores |
+| **Meio Ambiente e Qualidade Urbana** | 1 — pressão ambiental, arborização, lixo |
+| **Comunidade e Cultura** | 1 — cultura local, tradição popular, pertencimento |
+
+As 5 de Educação e as 3 de Igualdade e Direitos são **exatamente** as do painel de
+referência (`edu_vars` e `ig/lgbt/gen/rac`). Os outros 6 eixos são novos e ampliam o
+seletor — e cobrem os `Interesses` pedidos (saúde, família e cuidados, demografia,
+meio ambiente, Instagram).
+
+## B.5 Chave de junção com a malha do IBGE: `Bairro_Censo`
+
+Testado contra os GeoJSON gerados em `dados/geo/`:
+
+| Município | `Bairro` (bruto) ∩ IBGE | **`Bairro_Censo` ∩ IBGE** |
+|---|---:|---:|
+| São João del-Rei | 8 de 24 | **8 de 8 — 100%** |
+| Uberlândia | 69 de 91 | **69 de 69 — 100%** |
+
+**`Bairro_Censo` casa perfeitamente com o `NM_BAIRRO` do shapefile; `Bairro` (bruto) não.**
+Decisão fechada: a junção geográfica usa `Bairro_Censo`.
+
+Linhas sem `Bairro_Censo` (marcadas `—`): 2,3% em SJDR e 1,4% em Uberlândia — vão para um
+agrupamento "Não classificado" ou "Zona Rural", nunca descartadas em silêncio.
+
+Em Uberlândia, 6 bairros do IBGE não têm dado na tabela (Aclimação, Jardim Inconfidência,
+Jardim Ipanema, Lagoinha, Morada dos Pássaros, Panorama). Serão desenhados em cinza
+("sem dado"), como o painel de referência faz com `colorFor(null)` → `#cfd3df`.
+
+## B.6 Os 3 municípios sem malha do IBGE
+
+Lagoa Santa, Mariana e Pará de Minas têm **`Bairro_Censo` vazio em 100% das linhas** —
+coerente: o IBGE não delimitou bairros ali, então a tabela não tem o campo.
+
+Mas têm alternativa boa: **`Bairro` (bruto) com ~50 valores** e
+**`Latitude_Setor`/`Longitude_Setor` preenchidos em 100% das linhas**. Ou seja, cada setor
+tem nome de bairro e coordenada.
+
+Isso é melhor do que o fallback previsto no §6 (zonas eleitorais): dá para usar o **bairro
+bruto como unidade** e desenhar o mapa como **pontos proporcionais** por setor — o mesmo
+recurso que o painel de referência já usa em `votes.circ` — ou gerar polígonos por
+envoltória convexa dos setores de cada bairro. Decisão a tomar no painel-piloto do
+primeiro desses municípios.
+
+## B.7 Robustez (§3.2.3)
+
+Setores por bairro, contando cada setor uma vez:
+
+| Município | Mediana | Máx | Bairros com ≥5 setores |
+|---|---:|---:|---|
+| São João del-Rei | 14 | 34 | 8 de 8 |
+| Uberlândia | 13 | 88 | 57 de 69 |
+
+O filtro `≥5` do painel original é adequado e será mantido, configurável.
+
+## B.8 O que ainda falta
+
+- As tabelas de oportunidade dos **5 municípios restantes** (anunciadas para o próximo envio).
+- Os **dados eleitorais do TSE**: `votacao_secao_2024_MG.zip` (camada do candidato aliado,
+  2024) e o total oficial de 2022 por município, para validar os números da B.3.
+- A malha do IBGE **não cobre** Divinópolis, Pará de Minas, Lagoa Santa, Mariana,
+  Conselheiro Lafaiete e Curvelo — ver B.6 para o caminho.

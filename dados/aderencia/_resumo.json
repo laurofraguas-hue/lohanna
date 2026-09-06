@@ -1,0 +1,57 @@
+[
+  {
+    "municipio": "lagoa santa",
+    "ano": 2022,
+    "candidato": "LOHANNA SOUZA FRANÇA MOREIRA DE OLIVEIRA",
+    "setores": 160,
+    "votos": 772,
+    "inflacao": 18.8,
+    "pautas": 22,
+    "eixos": 8,
+    "ibge": false
+  },
+  {
+    "municipio": "mariana",
+    "ano": 2022,
+    "candidato": "LOHANNA SOUZA FRANÇA MOREIRA DE OLIVEIRA",
+    "setores": 93,
+    "votos": 637,
+    "inflacao": 24.4,
+    "pautas": 22,
+    "eixos": 8,
+    "ibge": false
+  },
+  {
+    "municipio": "pará de minas",
+    "ano": 2022,
+    "candidato": "LOHANNA SOUZA FRANÇA MOREIRA DE OLIVEIRA",
+    "setores": 161,
+    "votos": 3830,
+    "inflacao": 20.3,
+    "pautas": 22,
+    "eixos": 8,
+    "ibge": false
+  },
+  {
+    "municipio": "são joão del rei",
+    "ano": 2022,
+    "candidato": "LOHANNA SOUZA FRANÇA MOREIRA DE OLIVEIRA",
+    "setores": 154,
+    "votos": 1737,
+    "inflacao": 24.2,
+    "pautas": 22,
+    "eixos": 8,
+    "ibge": true
+  },
+  {
+    "municipio": "uberlândia",
+    "ano": 2022,
+    "candidato": "LOHANNA SOUZA FRANÇA MOREIRA DE OLIVEIRA",
+    "setores": 1352,
+    "votos": 5173,
+    "inflacao": 22.0,
+    "pautas": 22,
+    "eixos": 8,
+    "ibge": true
+  }
+]
