@@ -1,0 +1,12 @@
+# Shapefile extraído do zip — reproduzível com `unzip` a qualquer momento.
+dados/geo/MG_bairros_CD2022.shp
+dados/geo/MG_bairros_CD2022.dbf
+dados/geo/MG_bairros_CD2022.shx
+dados/geo/MG_bairros_CD2022.prj
+dados/geo/MG_bairros_CD2022.cpg
+
+# Dados brutos do TSE: grandes demais para o repositório.
+dados/*.zip
+dados/*.csv
+dados_filtrados/
+dados/cand_b64.txt

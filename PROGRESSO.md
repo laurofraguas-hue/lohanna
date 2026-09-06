@@ -213,3 +213,84 @@ fixa por sessão. Baixar e processar um por vez, apagando o bruto a cada etapa. 
 4. `gerar_painel.py` + `template_painel.html`, consumindo `lib/`.
 5. Painel-piloto → **PARAR** para validação.
 6. Aprovado, os demais um a um, atualizando este arquivo a cada painel.
+
+---
+
+## Atualização — malha de bairros do IBGE recebida (2026-09-06)
+
+`MG_bairros_CD2022.zip` (2,3 MB) chegou por anexo na conversa e está em
+`dados/geo/`. **Bloqueio de geometria parcialmente resolvido.**
+
+### O que é
+
+Malha de bairros do **Censo 2022 do IBGE**, Minas Gerais. Shapefile de polígonos,
+**1.994 bairros em 55 municípios** (de 853 em MG — o IBGE só delimita bairros em
+municípios selecionados). Projeção **SIRGAS 2000 (EPSG:4674)**, encoding UTF-8.
+
+Campos: `CD_REGIAO, NM_REGIAO, CD_UF, NM_UF, CD_MUN, NM_MUN, CD_DIST, NM_DIST,
+CD_SUBDIST, NM_SUBDIST, CD_BAIRRO, NM_BAIRRO, CD_RGINT, NM_RGINT, CD_RGI, NM_RGI,
+CD_CONCURB, NM_CONCURB`.
+
+`CD_MUN` (código IBGE de 7 dígitos) é a chave de junção com o TSE, que usa código
+próprio — a ponte se faz por `NM_MUNICIPIO` normalizado, ou por uma tabela
+CD_MUN ↔ CD_MUNICIPIO_TSE.
+
+### Cobertura dos 10 municípios do projeto
+
+| Município | Bairros | Situação |
+|---|---:|---|
+| Belo Horizonte | 476 | OK |
+| Betim | 126 | OK |
+| Uberlândia | 75 | OK |
+| São João del-Rei | 8 | OK, só a área urbana (~10 × 11 km) |
+| Divinópolis | — | **sem malha** |
+| Pará de Minas | — | **sem malha** |
+| Lagoa Santa | — | **sem malha** |
+| Mariana | — | **sem malha** |
+| Conselheiro Lafaiete | — | **sem malha** |
+| Curvelo | — | **sem malha** |
+
+**4 dos 10 municípios têm bairros; 6 não têm.** Para os 6, a unidade geográfica cai
+para o nível seguinte do §6 do comando: **zonas eleitorais**, ou **locais de votação
+agrupados por proximidade** (lat/lon vêm de `eleitorado_local_votacao_*.csv`). Nesses
+municípios o mapa deixa de ser coroplético e passa a ser de pontos proporcionais —
+que é, aliás, o mesmo recurso que o painel de referência já usa em `votes.circ`.
+
+Em São João del-Rei os 8 polígonos cobrem só a mancha urbana. Locais de votação
+rurais cairão fora de todos eles e precisam de um agrupamento "Zona Rural", como o
+§6 prevê.
+
+### Entregue: `preparar_geo.py`
+
+Extrai a malha por município e gera GeoJSON simplificado (Douglas-Peucker,
+tolerância 0,00015° ≈ 17 m) com coordenadas arredondadas a 5 casas (~1 m).
+Gera também o contorno do município (união dos bairros), útil como moldura.
+
+Resultado — bem dentro do orçamento de ~2 MB por painel:
+
+| Município | Bairros | Vértices orig. → simpl. | GeoJSON |
+|---|---:|---:|---:|
+| Belo Horizonte | 476 | 58.145 → 11.882 | 320 KB |
+| Betim | 126 | 26.669 → 4.938 | 122 KB |
+| Uberlândia | 75 | 5.778 → 1.475 | 42 KB |
+| São João del-Rei | 8 | 3.399 → 735 | 17 KB |
+
+Conferido: **zero polígonos inválidos**, zero nomes de bairro vazios, nenhum nome
+duplicado, e os bounding boxes batem com a localização real de cada município.
+O script sanea topologia em três níveis (direto → `buffer(0)` → `make_valid`) e
+revalida após o arredondamento, porque encostar vértices pode invalidar polígono.
+
+Referência cruzada: o painel de BH trabalha com 415 bairros; o IBGE traz 476. As
+duas fontes são compatíveis em ordem de grandeza — a diferença vem de o painel
+original ter agregado setores censitários, não de erro de recorte.
+
+### Sobre a projeção
+
+SIRGAS 2000 e WGS 84 diferem por menos de 1 m no Brasil — irrelevante na escala de
+um mapa de bairros. As coordenadas vão para o GeoJSON como lon/lat sem reprojeção,
+e o rodapé do painel registra isso, como faz o painel de referência.
+
+### O que ainda falta
+
+Só os **dados eleitorais e de aderência** (Rota A ou Rota B acima). A geometria
+deixou de ser bloqueio para 4 municípios e tem caminho definido para os outros 6.
