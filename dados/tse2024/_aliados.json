@@ -1,0 +1,53 @@
+{
+  "BELO HORIZONTE": {
+    "apelido": "Sara Vitral",
+    "nome_urna": "SARA VITRAL REZENDE",
+    "numero": "18018",
+    "votos2024": 2136,
+    "posicao": 131,
+    "total_cands": 848,
+    "locais": 306,
+    "secoes": 1281,
+    "pct": 0.19
+  },
+  "BETIM": {
+    "apelido": "Professor Gabriel Mendes",
+    "nome_urna": null,
+    "numero": null,
+    "votos2024": null,
+    "obs": "não localizado entre os candidatos a vereador de 2024"
+  },
+  "DIVINOPOLIS": {
+    "apelido": "Kell Silva",
+    "nome_urna": "KELLEN CRISTINA SILVA",
+    "numero": "43500",
+    "votos2024": 2195,
+    "posicao": 9,
+    "total_cands": 249,
+    "locais": 72,
+    "secoes": 461,
+    "pct": 1.93
+  },
+  "SAO JOAO DEL REI": {
+    "apelido": "Sinara Campos",
+    "nome_urna": "SINARA RAFAELA CAMPOS",
+    "numero": "43123",
+    "votos2024": 2355,
+    "posicao": 1,
+    "total_cands": 197,
+    "locais": 54,
+    "secoes": 197,
+    "pct": 4.97
+  },
+  "UBERLANDIA": {
+    "apelido": "Fabão",
+    "nome_urna": "FABIO DIAS QUEIROZ ZAVITOSKI",
+    "numero": "43123",
+    "votos2024": 14596,
+    "posicao": 1,
+    "total_cands": 522,
+    "locais": 138,
+    "secoes": 1666,
+    "pct": 4.32
+  }
+}

@@ -557,3 +557,117 @@ Se não passar, três reduções, em ordem de eficácia:
    manter só o cargo Vereador.
 
 As três combinadas deixam o material na casa de poucos MB.
+
+---
+
+# ADENDO 4 — TSE 2024: os arquivos chegaram, mas sem quebra geográfica
+
+Recebidos por anexo: Belo Horizonte, Betim, Divinópolis, São João del-Rei e Uberlândia.
+Arquivos pequenos (19–79 KB), formato CSV, 11 colunas:
+
+```
+CD_MUNICIPIO, NM_MUNICIPIO, CD_CARGO, DS_CARGO, NR_VOTAVEL, NM_VOTAVEL,
+SQ_CANDIDATO, QT_VOTOS_TOTAL, QT_ZONAS_COM_VOTO, QT_SECOES_COM_VOTO, QT_LOCAIS_COM_VOTO
+```
+
+## D.1 A granularidade é municipal — não dá para mapear
+
+**Uma linha por (município, cargo, candidato)**; zero duplicatas nessa chave, em todos os
+cinco arquivos. `QT_VOTOS_TOTAL` é o total do candidato **no município inteiro**.
+
+As colunas `QT_ZONAS_COM_VOTO`, `QT_SECOES_COM_VOTO` e `QT_LOCAIS_COM_VOTO` são
+**contagens** — em quantas zonas/seções/locais o candidato teve algum voto — e **não**
+quebras de votação. Não há como saber quantos votos ele teve em cada lugar.
+
+**Não existe nenhuma coluna de zona, seção, local ou bairro com votos.**
+
+## D.2 O que isso viabiliza e o que bloqueia
+
+Viabiliza, e é bastante:
+
+- **identificação dos candidatos aliados** e seus números de urna (ver D.3);
+- **validação dos totais** (item do QA §9);
+- **inteligência competitiva no nível do município** — os mais votados, o campo
+  progressista, o principal adversário (parte da seção 11);
+- **cards de resumo** com o total de 2024.
+
+Bloqueia:
+
+| Seção | Situação |
+|---|---|
+| 5. Desempenho eleitoral do candidato 2024, por região/bairro | **bloqueada** — vira bloco compacto municipal |
+| 7. Sobreposição das duas bases (Spearman + quadrantes) | **bloqueada** — 2022 tem setor, 2024 não tem nada |
+| 8. Frente de Reciprocidade | **bloqueada** — depende da seção 7 |
+| 11. Mais votados **por bairro** | **bloqueada** — só o nível municipal sobrevive |
+
+A sobreposição das duas camadas é o ponto do produto. Com o que veio, cada painel teria
+uma camada geográfica (Lohanna 2022, por setor) e uma camada só numérica (candidato 2024).
+
+## D.3 Candidatos aliados identificados
+
+| Município | Candidato | Nome de urna | Nº | Votos 2024 | Posição |
+|---|---|---|---|---:|---|
+| São João del-Rei | Sinara Campos | SINARA RAFAELA CAMPOS | 43123 | **2.355** | **1º de 197** |
+| Uberlândia | Fabão | FABIO DIAS QUEIROZ ZAVITOSKI | 43123 | **14.596** | **1º de 522** |
+| Divinópolis | Kell Silva | KELLEN CRISTINA SILVA | 43500 | **2.195** | 9º de 249 |
+| Belo Horizonte | Sara Vitral | SARA VITRAL REZENDE | 18018 | **2.136** | 131º de 848 |
+| Betim | Professor Gabriel Mendes | — | — | — | **não concorreu** |
+
+Salvo em `dados/tse2024/_aliados.json`.
+
+Dois detalhes:
+
+- Três dos quatro são do **PV (43)**, o partido da Lohanna — coerente com "aliados de
+  chapa". Sara Vitral é do 18 (Rede).
+- **Sinara Campos e Fabão foram os vereadores mais votados** de seus municípios. Isso
+  muda o tom desses dois painéis: não é candidatura em construção, é liderança
+  consolidada — e reforça o valor da leitura de reciprocidade, quando ela for possível.
+
+## D.4 Professor Gabriel Mendes: confirmado que não tem camada 2024
+
+A pergunta em aberto desde o primeiro inventário está respondida por evidência
+independente: ele **não aparece entre os 334 candidatos a vereador de Betim em 2024**.
+Isso bate exatamente com a coluna `Votos` da planilha, que trazia só
+"Votação lohanna 2022" para ele.
+
+**Decisão:** o painel dele é de **camada única** (Lohanna 2022), sem as seções 5, 7 e a
+frente de Reciprocidade — mais próximo do painel original de BH. Resta definir se é
+Betim, Belo Horizonte ou os dois.
+
+## D.5 O que preciso no lugar
+
+O mesmo recorte, mas a partir de `votacao_secao_2024_MG.zip`, **preservando o local de
+votação**. As colunas necessárias:
+
+```
+NM_MUNICIPIO, DS_CARGO, NR_VOTAVEL, NM_VOTAVEL, SG_PARTIDO,
+NR_ZONA, NR_LOCAL_VOTACAO, QT_VOTOS        (e NR_SECAO, se vier por seção)
+```
+
+Agregado por **local de votação** (somando as seções, cada uma contada uma vez), só cargo
+Vereador, só linhas com voto. É o que o `preparar_dados.py` já faz.
+
+Tamanho estimado: poucos MB por município, porque a maioria dos candidatos não tem voto na
+maioria dos locais.
+
+**E também `eleitorado_local_votacao_2024` filtrado**, que traz `NR_LATITUDE`,
+`NR_LONGITUDE` e `NM_BAIRRO` de cada local — sem ele não há como pousar os locais no mapa.
+
+## D.6 A malha de locais é adequada à unidade geográfica escolhida
+
+Comparando o nº de locais de votação com os bairros do IBGE:
+
+| Município | Zonas | Locais | Seções | Bairros IBGE |
+|---|---:|---:|---:|---:|
+| Belo Horizonte | 18 | 439 | 4.764 | 476 |
+| Uberlândia | 5 | 138 | 1.670 | 75 |
+| Betim | 2 | 107 | 981 | 126 |
+| Divinópolis | 2 | 76 | 502 | — |
+| São João del-Rei | 1 | 66 | 216 | 8 |
+
+Os 439 locais de BH batem com o painel de referência, que traz `cand.n_locais = 436` e 439
+círculos em `votes.circ` — mais uma confirmação de que o caminho é o mesmo.
+
+A densidade é boa: com 439 locais para 476 bairros em BH, ou 66 para 8 em São João
+del-Rei, o ponto-em-polígono resolve a atribuição de local para bairro sem ambiguidade
+relevante. Nos municípios sem malha, os locais viram os próprios pontos do mapa.
