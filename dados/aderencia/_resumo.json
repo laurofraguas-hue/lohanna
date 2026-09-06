@@ -1,5 +1,60 @@
 [
   {
+    "municipio": "belo horizonte",
+    "ano": 2022,
+    "candidato": "LOHANNA SOUZA FRANÇA MOREIRA DE OLIVEIRA",
+    "setores": 4007,
+    "votos": 87255,
+    "inflacao": 21.6,
+    "pautas": 22,
+    "eixos": 8,
+    "ibge": true
+  },
+  {
+    "municipio": "betim",
+    "ano": 2022,
+    "candidato": "LOHANNA SOUZA FRANÇA MOREIRA DE OLIVEIRA",
+    "setores": 719,
+    "votos": 5711,
+    "inflacao": 21.7,
+    "pautas": 22,
+    "eixos": 8,
+    "ibge": true
+  },
+  {
+    "municipio": "conselheiro lafaiete",
+    "ano": 2022,
+    "candidato": "LOHANNA SOUZA FRANÇA MOREIRA DE OLIVEIRA",
+    "setores": 154,
+    "votos": 1923,
+    "inflacao": 25.9,
+    "pautas": 22,
+    "eixos": 8,
+    "ibge": false
+  },
+  {
+    "municipio": "curvelo",
+    "ano": 2022,
+    "candidato": "LOHANNA SOUZA FRANÇA MOREIRA DE OLIVEIRA",
+    "setores": 142,
+    "votos": 745,
+    "inflacao": 23.3,
+    "pautas": 22,
+    "eixos": 8,
+    "ibge": false
+  },
+  {
+    "municipio": "divinópolis",
+    "ano": 2022,
+    "candidato": "LOHANNA SOUZA FRANÇA MOREIRA DE OLIVEIRA",
+    "setores": 419,
+    "votos": 166972,
+    "inflacao": 20.4,
+    "pautas": 22,
+    "eixos": 8,
+    "ibge": false
+  },
+  {
     "municipio": "lagoa santa",
     "ano": 2022,
     "candidato": "LOHANNA SOUZA FRANÇA MOREIRA DE OLIVEIRA",

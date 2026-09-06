@@ -439,3 +439,121 @@ O filtro `≥5` do painel original é adequado e será mantido, configurável.
   2024) e o total oficial de 2022 por município, para validar os números da B.3.
 - A malha do IBGE **não cobre** Divinópolis, Pará de Minas, Lagoa Santa, Mariana,
   Conselheiro Lafaiete e Curvelo — ver B.6 para o caminho.
+
+---
+
+# ADENDO 3 — Os 10 municípios inventariados
+
+Chegaram Belo Horizonte, Betim, Conselheiro Lafaiete, Curvelo e Divinópolis. Com os 5
+anteriores, **os 10 municípios do projeto estão cobertos**. Mesmo schema de 52 colunas,
+mesmos 8 eixos e 22 pautas, `Candidato` = Lohanna e `Ano` = 2022 em todos.
+
+## C.1 Quadro geral
+
+| Município | Setores | **Votos Lohanna 2022** | Inflação se somado ingenuamente | Malha IBGE |
+|---|---:|---:|---:|---|
+| Belo Horizonte | 4.007 | **87.255** | 21,6× | sim (476 bairros) |
+| Uberlândia | 1.352 | **5.173** | 22,0× | sim (75) |
+| Betim | 719 | **5.711** | 21,7× | sim (126) |
+| Divinópolis | 419 | ⚠️ **166.972** | 20,4× | não |
+| Pará de Minas | 161 | **3.830** | 20,3× | não |
+| Lagoa Santa | 160 | **772** | 18,8× | não |
+| Conselheiro Lafaiete | 154 | **1.923** | 25,9× | não |
+| São João del-Rei | 154 | **1.737** | 24,2× | sim (8) |
+| Curvelo | 142 | **745** | 23,3× | não |
+| Mariana | 93 | **637** | 24,4× | não |
+
+## C.2 O método está validado contra o painel de referência
+
+Belo Horizonte é o caso de controle, porque existe um painel já validado para ele:
+
+| | Votos |
+|---|---:|
+| `DATA.votes.total` do painel de referência | 87.162 |
+| Soma apurada agora, deduplicando por `CD_setor` | **87.255** |
+| Diferença | 93 votos (**0,11%**) |
+
+Reproduzir o número de um artefato já aprovado com 0,11% de diferença é a melhor
+evidência disponível de que a regra do §3.2.1 está sendo aplicada corretamente. A
+diferença residual vem da contagem de setores (o painel original usa 3.743; a tabela
+traz 4.007 com endereço CNEFE correspondido).
+
+## C.3 ⚠️ Divinópolis está fora de escala — não pode ser renderizado como está
+
+Divinópolis é o único município cujos votos são internamente implausíveis:
+
+| Município | Mediana de votos por setor | Máx | Q1/Q2/Q3_Votos_Base (mediana) |
+|---|---:|---:|---|
+| Divinópolis | **387** | **747** | **198 / 332 / 536** |
+| Belo Horizonte | 17 | 90 | 8 / 16 / 25 |
+| Pará de Minas | 18 | 114 | 3,8 / 14 / 29 |
+| Uberlândia | 3 | 25 | 1 / 2 / 5 |
+| (demais) | 3 a 9 | 18 a 44 | dígitos únicos |
+
+Um setor censitário tem cerca de 300 domicílios e 600–800 eleitores. Uma mediana de
+**387 votos por setor para uma única candidata** significaria ~50–65% de todo o setor,
+e o máximo de 747 se aproxima ou ultrapassa o eleitorado inteiro. É impossível.
+
+O total de 166.972 seria **quase o dobro do de Belo Horizonte**, numa cidade cerca de
+dez vezes menor.
+
+**Não é problema de deduplicação.** Testei: `Votos_Candidato` é constante dentro do
+setor em todos os 419 casos, e `ID_POLIGONO` é 1:1 com `CD_setor` — não há unidade
+intermediária escondida. E as colunas `Q1/Q2/Q3_Votos_Base` estão na **mesma escala
+inflada**, o que mostra que o bloco de votos inteiro do arquivo de Divinópolis foi
+gerado numa granularidade diferente da dos outros nove — provavelmente votos por local
+de votação replicados nos setores, sem a desagregação que os demais receberam.
+
+**Encaminhamento:** conforme §3.2.4, Divinópolis não entra em nenhum indicador enquanto
+não for esclarecido. Duas saídas: (a) regerar o arquivo de Divinópolis com o mesmo
+procedimento dos outros nove; ou (b) validar contra o total oficial do TSE de 2022 e,
+se a coluna estiver de fato replicada, reconstruir a camada 2022 de Divinópolis a
+partir do `votacao_secao_2022_MG`. Fica registrado no rodapé do painel e aqui.
+
+Isso afeta o painel da **Kell Silva** (Divinópolis). Os outros nove seguem.
+
+## C.4 Cobertura de setores
+
+`Total_Setores_Município` declarado é maior que o observado em todos os municípios —
+a tabela cobre os setores com endereço CNEFE correspondido:
+
+| Município | Declarado | Observado | Cobertura |
+|---|---:|---:|---:|
+| Belo Horizonte | 5.137 | 4.007 | 78% |
+| Uberlândia | 1.924 | 1.352 | 70% |
+| Betim | 969 | 719 | 74% |
+| Divinópolis | 542 | 419 | 77% |
+| Conselheiro Lafaiete | 234 | 154 | 66% |
+| Lagoa Santa | 253 | 160 | 63% |
+| Curvelo | 226 | 142 | 63% |
+| Pará de Minas | 214 | 161 | 75% |
+| São João del-Rei | 206 | 154 | 75% |
+| Mariana | 142 | 93 | 65% |
+
+Cobertura de 63% a 78%. Precisa constar do rodapé de cada painel como ressalva
+metodológica: o índice descreve os setores correspondidos, não o município inteiro.
+
+## C.5 Resposta sobre a planilha de 85 MB do TSE
+
+**Pelo Google Drive, não.** O teto do conector é de **10 MB por arquivo**, medido, e
+85 MB é 8,5× isso. Não há download por faixa.
+
+**Mas o anexo da conversa aguenta muito mais do que eu supunha.** A tabela de Belo
+Horizonte que você acabou de mandar tem **22,35 MB** e chegou inteira. O canal de anexo
+grava em disco sem passar pelo contexto do modelo, e claramente não está preso ao limite
+de 10 MB do conector. **Vale tentar anexar os 85 MB direto aqui** — é a tentativa mais
+barata, e se passar resolve na hora.
+
+Se não passar, três reduções, em ordem de eficácia:
+
+1. **Agregar seção → local de votação.** Corta cerca de uma ordem de grandeza e é a
+   granularidade que o painel usa de fato. 85 MB devem virar poucos MB. O
+   `preparar_dados.py` agora aceita `.xlsx` direto — basta nomear o arquivo
+   `votacao_filtrada.xlsx` e apontar a pasta.
+2. **Separar por município:** `--separar-municipios` grava um CSV por município.
+   85 MB ÷ 10 ≈ 8,5 MB cada, o que já **cabe no teto do Drive** mesmo sem agregar.
+3. **Descartar colunas constantes** (`DT_GERACAO`, `HH_GERACAO`, `NM_TIPO_ELEICAO`,
+   `DS_ELEICAO`, `DT_ELEICAO`, `TP_ABRANGENCIA`, `SG_UE`, `NM_UE`…) e, se for 2024,
+   manter só o cargo Vereador.
+
+As três combinadas deixam o material na casa de poucos MB.

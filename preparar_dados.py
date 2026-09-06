@@ -75,6 +75,9 @@ def norm(s):
 
 ALVO = {norm(m) for m in MUNICIPIOS}
 
+# Preenchido em main(); evita passar o flag por toda a cadeia de chamadas.
+SEPARAR = [False]
+
 
 def achar_col(cols, *candidatas):
     """Localiza uma coluna pelo nome, tolerando variações. Nada é presumido:
@@ -88,7 +91,15 @@ def achar_col(cols, *candidatas):
 
 
 def abrir_membros(caminho):
-    """Devolve [(nome, bytes_ou_path)] dos CSVs, seja zip ou csv solto."""
+    """Devolve [(nome, bytes_ou_path)] dos CSVs, seja zip, csv solto ou xlsx."""
+    if caminho.lower().endswith((".xlsx", ".xls")):
+        # Planilha já filtrada: converte para CSV em memória e segue o mesmo caminho.
+        for aba in pd.ExcelFile(caminho).sheet_names:
+            df = pd.read_excel(caminho, sheet_name=aba, dtype=str)
+            buf = io.StringIO()
+            df.to_csv(buf, sep=SEP, index=False)
+            yield f"{os.path.basename(caminho)}#{aba}", buf.getvalue().encode("utf-8")
+        return
     if caminho.lower().endswith(".zip"):
         with zipfile.ZipFile(caminho) as z:
             nomes = [n for n in z.namelist() if n.lower().endswith((".csv", ".txt"))]
@@ -195,6 +206,14 @@ def processar_votacao(caminho, cargos, rotulo, saida):
 
     df.to_csv(saida, index=False, sep=SEP, encoding="utf-8")
     mb = os.path.getsize(saida) / 1e6
+    if SEPARAR[0]:
+        c_mun_o = achar_col(df.columns, "NM_MUNICIPIO")
+        base, ext = os.path.splitext(saida)
+        for mun, sub in df.groupby(c_mun_o):
+            dest = f"{base}__{norm(mun).lower().replace(' ', '_')}{ext}"
+            sub.to_csv(dest, index=False, sep=SEP, encoding="utf-8")
+            print(f"     por município -> {os.path.basename(dest)} "
+                  f"({os.path.getsize(dest)/1e6:.1f} MB)")
     print(f"  lidas {total_lidas:,} linhas -> {len(df):,} linhas agregadas")
     print(f"  -> {saida} ({mb:.1f} MB)")
     for mun, sub in df.groupby(achar_col(df.columns, "NM_MUNICIPIO")):
@@ -284,8 +303,12 @@ def main():
                     help="pasta com os zips/xlsx baixados do Drive")
     ap.add_argument("--saida", default="dados_filtrados",
                     help="pasta de saída (padrão: ./dados_filtrados)")
+    ap.add_argument("--separar-municipios", action="store_true",
+                    help="grava também um arquivo por município, para caber no teto "
+                         "de 10 MB por arquivo do conector do Drive")
     a = ap.parse_args()
 
+    SEPARAR[0] = a.separar_municipios
     os.makedirs(a.saida, exist_ok=True)
     E = lambda n: os.path.join(a.entrada, n)
     S = lambda n: os.path.join(a.saida, n)
@@ -302,6 +325,13 @@ def main():
                      "LOCAIS DE VOTAÇÃO 2022", S("locais_2022.csv"))
     processar_aderencia(E("tabela_oportunidades_lohanna_franca_mg_2022.xlsx"),
                         S("aderencia"))
+
+    # Planilha do TSE já filtrada pelo usuário, em qualquer um destes nomes.
+    for nome in ("votacao_filtrada.xlsx", "votacao_secao_filtrada.xlsx",
+                 "tse_filtrado.xlsx"):
+        if os.path.exists(E(nome)):
+            processar_votacao(E(nome), CARGOS_2024 + CARGOS_2022,
+                              f"PLANILHA FILTRADA ({nome})", S("votos_filtrado_locais.csv"))
 
     print("\n" + "=" * 70)
     print("RESULTADO — anexe estes arquivos na conversa:")
