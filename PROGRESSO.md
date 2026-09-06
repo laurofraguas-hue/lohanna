@@ -87,7 +87,7 @@ Teto do conector: **10 MB por arquivo**. Menor arquivo da pasta: **43 MB**.
   totais por município, deduplicação de seções (`QT_SECOES`), separação estrita das
   camadas 2024/2022 e detecção tolerante de nomes de coluna.
 
-### COMO RETOMAR — atualizado
+### COMO RETOMAR — Rota B (sem mexer em configuração)
 
 Na sua máquina, com os 5 arquivos numa pasta:
 
@@ -106,6 +106,110 @@ no topo do script.
 
 Continua faltando decidir:
 - **Geometria dos municípios** (Overpass e IBGE também bloqueados) — precisa vir junto
-  como GeoJSON/shapefile de bairros, ou a rede ser liberada. Sem isso, os mapas
-  coropléticos das seções 4, 7 e 8 não existem; o resto do painel sim.
+  como GeoJSON/shapefile de bairros, ou a rede ser liberada (Rota A abaixo resolve isso
+  de quebra). Sem geometria, os mapas coropléticos das seções 4, 7 e 8 não existem;
+  o resto do painel sim.
 - **Gabriel Mendes**: painel de camada única? Betim, BH, ou os dois?
+
+---
+
+## COMO RETOMAR — Rota A (liberar a rede) — RECOMENDADA
+
+Esta é a rota mais limpa: com a rede aberta, o download e todo o processamento acontecem
+dentro da sessão, sem intermediário e sem passar pelo contexto do modelo.
+
+### Diagnóstico
+
+Esta sessão roda no ambiente **"Default"** (`env_011CUVqrkKzKo11Hg8FNTmsn`, Anthropic
+cloud), cujo nível de rede é **Trusted** — allowlist fixa com registries de pacotes,
+GitHub e SDKs de nuvem. Google Drive não está nela. Por isso `pip install` funciona e
+`curl docs.google.com` não.
+
+Níveis disponíveis: **None**, **Trusted** (atual), **Full** (qualquer domínio),
+**Custom** (allowlist própria).
+
+### Passo a passo
+
+1. Em **claude.ai/code**, clicar no **ícone de nuvem com o nome do ambiente** ("Default"),
+   na linha logo acima da caixa de mensagem. Não há página de configurações nem URL direta
+   para esse seletor.
+2. Passar o mouse sobre o ambiente e clicar na **engrenagem** à direita — ou escolher
+   **Add cloud environment** para criar um ambiente novo e deixar o Default intacto
+   (preferível, já que o Default é o padrão de todas as outras sessões).
+3. Em **Network access**, escolher **Custom**.
+4. Em **Allowed domains**, uma linha por domínio:
+
+```
+drive.google.com
+docs.google.com
+drive.usercontent.google.com
+*.googleusercontent.com
+accounts.google.com
+overpass-api.de
+servicodados.ibge.gov.br
+geoftp.ibge.gov.br
+```
+
+5. Marcar **"Also include default list of common package managers"** — senão pip, npm etc.
+   param de funcionar.
+6. Salvar.
+
+Alternativa: escolher **Full** e pular a lista.
+
+Os três primeiros domínios são os que o `gdown` usa (o download de arquivo grande do Drive
+redireciona para `drive.usercontent.google.com`). Os três últimos destravam a **geometria
+dos municípios** — Overpass e IBGE estão barrados pela mesma política, e sem eles não há
+mapa coroplético.
+
+### Duas ressalvas
+
+- **A sessão atual não pega a mudança.** A configuração do ambiente é lida uma única vez,
+  na largada da sessão. Depois de salvar, **abrir uma sessão nova** no ambiente ajustado,
+  no mesmo repositório e branch (`claude/electoral-panel-allied-candidates-wfput7`). Tudo
+  já está commitado, então a sessão nova encontra `INVENTARIO.md`, `PROGRESSO.md`, `lib/`
+  e `preparar_dados.py` prontos.
+- **Liberar a rede não muda o teto de 10 MB do conector do Drive** — esse limite é do
+  conector, não da rede (tráfego de conectores MCP nem passa pela allowlist da sessão).
+  O que a liberação destrava é `gdown`/`curl`, que gravam direto no disco do contêiner
+  sem passar pelo contexto do modelo. É disso que precisamos.
+
+### Primeiros comandos da sessão nova
+
+```bash
+# 1. confirmar que a rede abriu
+curl -sS -o /dev/null -w "%{http_code}\n" https://drive.google.com
+
+# 2. baixar UM arquivo por vez (o disco da sessão é cota fixa)
+pip install gdown pandas openpyxl
+gdown --id 1JHxAAszjaIZDR2AG4paIZwEZrrzrSeuJ -O dados/votacao_secao_2024_MG.zip
+
+# 3. reduzir e APAGAR o bruto antes de baixar o próximo
+python3 preparar_dados.py --entrada dados --saida dados_filtrados
+rm dados/votacao_secao_2024_MG.zip
+```
+
+IDs dos arquivos na pasta `1RQWYvnDU2ef_5yqWRdERtJQ0PFLN6Uju`:
+
+| Arquivo | ID | Tamanho |
+|---|---|---|
+| `votacao_secao_2022_MG.zip` | `17xnxWXMqL-aFoIH952-3_Lr5w6GGeoiA` | 281 MB |
+| `votacao_secao_2024_MG.zip` | `1JHxAAszjaIZDR2AG4paIZwEZrrzrSeuJ` | 192 MB |
+| `eleitorado_local_votacao_2022.zip` | `13xLTneLip4kv0fPXb4Ev74MvqeX3xxrm` | 73 MB |
+| `eleitorado_local_votacao_2024.zip` | `1JUUZVHt-2E3AxjElOL5BY3ErlNHpuUNN` | 43 MB |
+| `tabela_oportunidades_lohanna_franca_mg_2022.xlsx` | `1n34KJU_XvcanQ3A3LSAhE_Xn9k6DOrI1` | 58 MB |
+| `Mapeamento candidatos 2026.xlsx` (já em `dados/`) | `1bqGTJtt955cmUAGwS4UK5ylKUIT-ZCbl` | 9 KB |
+
+**Atenção ao disco:** são ~679 MB comprimidos, vários GB descompactados, contra uma cota
+fixa por sessão. Baixar e processar um por vez, apagando o bruto a cada etapa. Se aparecer
+"no space left on device", apagar os brutos já processados libera espaço na hora.
+
+### Depois do download, o fluxo é o mesmo das duas rotas
+
+1. Imprimir o inventário real (abas, nº de linhas, nomes de coluna) — **sem presumir nada**.
+2. Reconstruir os totais de 2024 a partir das seções, cada seção contada uma única vez;
+   validar contra o total oficial do candidato no município **antes** de renderizar.
+3. Definir a unidade geográfica por município (regionais → clusters de bairros → zonas
+   eleitorais → locais agrupados), a mesma para as duas camadas.
+4. `gerar_painel.py` + `template_painel.html`, consumindo `lib/`.
+5. Painel-piloto → **PARAR** para validação.
+6. Aprovado, os demais um a um, atualizando este arquivo a cada painel.
