@@ -220,3 +220,89 @@ Claude Code local, onde `gdown --folder` alcança o Drive.
 6. Painel-piloto → **PARO** para validação, com totais conferidos e decisões metodológicas listadas.
 7. Aprovado, os demais um a um, salvando em `paineis/Painel_<Nome>_<Municipio>.html` e atualizando `PROGRESSO.md` a cada painel.
 8. QA do §9 rodado em cada arquivo antes da entrega.
+
+---
+
+# ADENDO — 2ª tentativa de acesso (2026-09-06)
+
+Você adicionou os dados de 2022 e pediu para eu tentar de novo. Tentei por **três rotas
+independentes**. Todas falharam, e agora tenho os limites exatos, medidos e não deduzidos.
+
+## A.1 Pasta do Drive agora — 5 arquivos, ~679 MB
+
+| Arquivo | Tamanho | Situação |
+|---|---|---|
+| `votacao_secao_2022_MG.zip` | **295.129.070 B (281 MB)** | **novo** |
+| `votacao_secao_2024_MG.zip` | 201.366.815 B (192 MB) | |
+| `eleitorado_local_votacao_2022.zip` | **76.463.224 B (73 MB)** | **novo** |
+| `tabela_oportunidades_lohanna_franca_mg_2022.xlsx` | 60.777.486 B (58 MB) | |
+| `eleitorado_local_votacao_2024.zip` | 45.276.803 B (43 MB) | |
+
+Os arquivos foram **acrescentados**, não reduzidos: o total subiu de ~307 MB para ~679 MB.
+O menor deles tem 43 MB.
+
+## A.2 As três rotas testadas
+
+**1. Rede do contêiner** — segue fechada:
+```
+docs.google.com   000     drive.google.com (sem proxy)  403
+```
+
+**2. `WebFetch`** (busca pelo servidor, não pelo contêiner) — também barrada:
+```json
+{"error_type":"EGRESS_BLOCKED","domain":"docs.google.com",
+ "message":"Access to docs.google.com is blocked by the network egress proxy."}
+```
+Isso descarta a hipótese de que só o contêiner estivesse bloqueado: a política de egress
+vale para o ambiente inteiro.
+
+**3. Conector do Drive** — testado no menor arquivo (43 MB). O próprio conector respondeu:
+```
+File too large for download, over limit of 10 MB.
+```
+
+## A.3 O limite exato, agora medido
+
+**Teto rígido de 10 MB por arquivo no conector do Drive.** O menor dos cinco arquivos tem
+43 MB — 4,3× o teto. Nenhum passa.
+
+Há ainda um segundo teto, independente: o conector devolve o arquivo em base64 **dentro do
+meu contexto**. Mesmo um arquivo de 10 MB viraria ~13,3 milhões de caracteres ≈ 3,8 milhões
+de tokens — um quarto do orçamento da sessão gasto num único arquivo, sem sobrar espaço para
+construir os painéis.
+
+**A rota que funciona é outra: anexar o arquivo direto na conversa.** Aí ele é gravado em
+disco no contêiner sem passar pelo meu contexto — foi exatamente assim que o painel de
+referência de 1,4 MB chegou até mim. É por isso que a solução é reduzir os arquivos antes de
+enviar, e não tentar outro caminho de download.
+
+## A.4 O que os dados de 2022 destravam (quando chegarem)
+
+`votacao_secao_2022_MG.zip` responde a pergunta que ficou em aberto no §7-E1: **os votos da
+Lohanna em 2022 saem do TSE por seção**, e não da coluna `Votos` da planilha (que é texto).
+
+Isso é a melhor notícia desta rodada, porque muda o teto do produto: a camada 2022 deixa de
+ser um card de resumo e passa a ser **camada geográfica de verdade**, comparável à de 2024 na
+mesma unidade. Ou seja, a **seção 7 (Sobreposição das duas bases)** — scatter com Spearman e
+os quatro quadrantes — e a frente de **Reciprocidade** da seção 8 são viáveis. Elas eram o
+principal risco do projeto e deixaram de ser.
+
+## A.5 `preparar_dados.py` — o desbloqueio
+
+Escrevi e testei `preparar_dados.py`, que roda **na sua máquina** e faz a redução:
+
+1. filtra tudo para os 10 municípios da planilha;
+2. agrega os votos de **seção → local de votação** (soma `QT_VOTOS` por município + zona +
+   local + candidato), o que corta o tamanho em cerca de uma ordem de grandeza e já entrega a
+   granularidade que o painel usa — cada seção contada **uma única vez**, atendendo o §3.2.1;
+3. mantém 2024 (Vereador + Prefeito) e 2022 (Dep. Estadual + Federal) em **arquivos
+   separados**, para as camadas nunca se misturarem (§3.1);
+4. extrai bairro, latitude, longitude e eleitorado de cada local de votação;
+5. filtra a tabela de aderência pelos mesmos municípios;
+6. **imprime o inventário** de cada arquivo — abas, nº de linhas e nomes de coluna — que é
+   justamente o que o §7.1 exige e o que eu não posso levantar sozinho.
+
+Testado de ponta a ponta com dados sintéticos no formato do TSE (CSV `;`, latin-1, dentro de
+zip). Conferências que passaram: totais por município exatos, seções deduplicadas via
+`QT_SECOES`, cargos e municípios corretamente filtrados, detecção de colunas tolerante a
+variação de nome (nada é presumido — se não encontra, avisa em vez de adivinhar).
