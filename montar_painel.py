@@ -22,9 +22,12 @@ js = open("painel.js", encoding="utf-8").read()
 
 mun, ape = D["municipio"].title(), D["apelido"]
 c24 = (D.get("votes24") or {}).get("candidato")
-sub = (f"Aderência a {len(D['pautas'])} pautas em {len(D['eixos'])} eixos, por bairro e setor censitário · "
-       f"Lohanna França · 2022: {D['votes22']['total']:,} votos sem dupla contagem"
-       .replace(",", ".")) 
+sub = f"Aderência a {len(D['pautas'])} pautas em {len(D['eixos'])} eixos, por bairro e setor censitário"
+if D["votes22"].get("suprimido"):
+    sub += " · Camada de votos da Lohanna 2022 SUPRIMIDA neste município (ver rodapé)"
+else:
+    sub += (f" · Lohanna França · 2022: {D['votes22']['total']:,} votos sem dupla contagem"
+            .replace(",", "."))
 if c24:
     sub += f" · {ape} · vereador 2024: {c24['votos']:,}".replace(",", ".") + f" votos ({c24['pos']}º)"
 sub += f" · Unidade: {D['meta']['unidade']}"

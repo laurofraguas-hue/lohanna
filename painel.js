@@ -48,8 +48,40 @@ function hideTip(){tip.style.display='none';}
 /* ------------------------------------------------------------ mapas */
 const W=640,H=520;
 let PROJ=null, BB=null;
-function desenhaMapa(el,{fill,tipo,circles,sel}={}){
-  if(!DATA.geojson){ el.innerHTML='<div class="note">Sem malha de bairros para este município.</div>'; return; }
+/* Sem malha do IBGE o mapa vira de pontos: um círculo por bairro, no centroide dos
+   seus setores. É a opção 4 do recorte geográfico — mantém a leitura espacial sem
+   fingir uma fronteira que o IBGE não publicou. */
+function pontosBounds(){
+  const pts=DATA.bairros.filter(b=>b.lon!=null&&b.lat!=null);
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  pts.forEach(b=>{x0=Math.min(x0,b.lon);x1=Math.max(x1,b.lon);y0=Math.min(y0,b.lat);y1=Math.max(y1,b.lat);});
+  const mx=(x1-x0)*.08||.01, my=(y1-y0)*.08||.01;
+  return [x0-mx,y0-my,x1+mx,y1+my];
+}
+function desenhaPontos(el,{fill,raio,titulo}){
+  titulo=titulo||L(metric);
+  const pts=DATA.bairros.filter(b=>b.lon!=null&&b.lat!=null);
+  if(!pts.length){el.innerHTML='<div class="note">Sem coordenadas para desenhar o mapa.</div>';return;}
+  if(!BB){BB=pontosBounds();PROJ=projector(BB,W,H,26);}
+  const rmax=Math.max(...pts.map(b=>raio(b)||0))||1;
+  let s=`<svg class="svgmap" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">`;
+  pts.slice().sort((a,b)=>(raio(b)||0)-(raio(a)||0)).forEach(b=>{
+    const q=PROJ(b.lon,b.lat), r=5+20*Math.sqrt(Math.max(0,raio(b)||0)/rmax);
+    s+=`<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="${r.toFixed(1)}"
+        style="fill:${fill(b)};fill-opacity:.8;stroke:#fff;stroke-width:1" data-b="${b.Bairro.replace(/"/g,'&quot;')}"></circle>`;
+  });
+  s+='</svg>';
+  el.innerHTML=s;
+  el.querySelectorAll('circle').forEach(c=>{
+    c.onmousemove=e=>{const b=byB[c.dataset.b];
+      showTip(e,`<b>${c.dataset.b}</b><br><span class="m">${titulo}</span><br>índice ${f1(b[metric])} · ${b.setores} setores`+
+        (DATA.votes22.suprimido?'':`<br><span class="yr y22">2022</span> ${fmt(b.votos22)} votos`));};
+    c.onmouseleave=hideTip;
+  });
+}
+function desenhaMapa(el,{fill,tipo,circles,sel,pfill,praio,ptitulo}={}){
+  if(!DATA.geojson){ desenhaPontos(el,{fill:pfill||(b=>colorFor(b[metric])),
+      raio:praio||(b=>b.setores), titulo:ptitulo||L(metric)}); return; }
   if(!BB){BB=bounds(DATA.geojson);PROJ=projector(BB,W,H,10);}
   let s=`<svg class="svgmap" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">`;
   DATA.geojson.features.forEach(f=>{
@@ -104,10 +136,16 @@ function cards(){
   const el=[];
   if(c) el.push(`<div class="card"><h3>${DATA.apelido} — vereador · 2024</h3><div class="v">${fmt(c.votos)}</div>
     <div class="s">${c.pos}º de ${v24.n_cands} candidatos · ${f1(c.pct)}% dos votos nominais</div></div>`);
-  el.push(`<div class="card"><h3>Lohanna França — 2022</h3><div class="v">${fmt(v22.total)}</div>
-    <div class="s">no município, somando ${DATA.setores.length.toLocaleString('pt-BR')} setores censitários, cada um uma única vez</div></div>`);
-  el.push(`<div class="card"><h3>Bairro líder — Lohanna 2022</h3><div class="v">${v22.top_bairro.nome}</div>
-    <div class="s">${fmt(v22.top_bairro.votos)} votos · região ${v22.top_bairro.regional}</div></div>`);
+  if(!v22.suprimido){
+    el.push(`<div class="card"><h3>Lohanna França — 2022</h3><div class="v">${fmt(v22.total)}</div>
+      <div class="s">no município, somando ${DATA.setores.length.toLocaleString('pt-BR')} setores censitários, cada um uma única vez</div></div>`);
+    el.push(`<div class="card"><h3>Bairro líder — Lohanna 2022</h3><div class="v">${v22.top_bairro.nome}</div>
+      <div class="s">${fmt(v22.top_bairro.votos)} votos · região ${v22.top_bairro.regional}</div></div>`);
+  }else{
+    el.push(`<div class="card" style="border-top-color:#e0a800"><h3>Lohanna França — 2022</h3>
+      <div class="v" style="color:#a07800">suprimida</div>
+      <div class="s">a contagem de votos deste município está fora de escala e não é exibida; ver ressalva no rodapé</div></div>`);
+  }
   el.push(`<div class="card"><h3>Bairro líder — ${L(metric)}</h3><div class="v">${topM?topM.Bairro:'—'}</div>
     <div class="s">índice ${topM?f1(topM[metric]):'—'} · ${topM?topM.setores:0} setores · mínimo ${DATA.meta.min_setores} setores</div></div>`);
   el.push(`<div class="card"><h3>Base territorial</h3><div class="v">${B.length} bairros</div>
@@ -129,6 +167,8 @@ function spearman(xs,ys){
 function insights(){
   const rob=B.filter(b=>b.setores>=DATA.meta.min_setores);
   const out=[];
+  const semV=DATA.votes22.suprimido;
+  if(!semV){
   const rho=spearman(rob.map(b=>b[metric]),rob.map(b=>b.votos22));
   const forca=Math.abs(rho)<.15?'praticamente nula':Math.abs(rho)<.35?'fraca':Math.abs(rho)<.6?'moderada':'forte';
   out.push(`<div class="insight"><b>Aderência × voto de 2022:</b> a correlação de Spearman entre o índice de
@@ -147,14 +187,30 @@ function insights(){
     ${forte.map(b=>`<b>${b.Bairro}</b> (${fmt(b.votos22)})`).join(', ')} concentram
     ${f1(100*forte.reduce((s,b)=>s+b.votos22,0)/DATA.votes22.total)}% dos votos da Lohanna no município.
     A região <b>${DATA.votes22.top_regional}</b> lidera o conjunto.</div>`);
+  } else {
+    out.push(`<div class="warn"><b>Sem leitura de voto neste município.</b> ${DATA.votes22.motivo}
+      As leituras abaixo usam apenas o índice de aderência.</div>`);
+    const alto=[...rob].sort((a,b)=>b[metric]-a[metric]).slice(0,3);
+    const baixo=[...rob].sort((a,b)=>a[metric]-b[metric]).slice(0,3);
+    out.push(`<div class="insight"><b>Onde ${L(metric)} adere mais:</b>
+      ${alto.map(b=>`<b>${b.Bairro}</b> (${f1(b[metric])})`).join(', ')} — território natural desta pauta.</div>`);
+    out.push(`<div class="insight"><b>Onde adere menos:</b>
+      ${baixo.map(b=>`<b>${b.Bairro}</b> (${f1(b[metric])})`).join(', ')} — exigem outra porta de entrada.</div>`);
+  }
 
-  if(DATA.votes24&&DATA.votes24.candidato){
+  if(DATA.votes24&&DATA.votes24.candidato&&!semV){
     const c=DATA.votes24.candidato;
     out.push(`<div class="insight"><b>As duas candidaturas em escala:</b> ${DATA.apelido} fez
       <b>${fmt(c.votos)}</b> votos para vereador em <span class="yr y24">2024</span> (${c.pos}º de ${DATA.votes24.n_cands}),
       contra <b>${fmt(DATA.votes22.total)}</b> da Lohanna para deputada em <span class="yr y22">2022</span> no mesmo
       município — ${f1(c.votos/DATA.votes22.total)}× a votação dela aqui. São pleitos e cargos diferentes: a comparação
       é de <b>tamanho de base</b>, não de desempenho, e os números nunca se somam.</div>`);
+  }
+  if(DATA.votes24&&DATA.votes24.candidato&&semV){
+    const c=DATA.votes24.candidato;
+    out.push(`<div class="insight"><b>${DATA.apelido} em <span class="yr y24">2024</span>:</b>
+      <b>${fmt(c.votos)}</b> votos para vereador, ${c.pos}º de ${DATA.votes24.n_cands}.
+      A comparação com a base de 2022 fica pendente da correção daquela camada.</div>`);
   }
   document.getElementById('insights').innerHTML=out.join('');
 }
@@ -165,7 +221,7 @@ function mapaRanking(){
   document.getElementById('mapTitle').textContent='Mapa por bairro — '+L(metric);
   document.getElementById('rkTitle').textContent='Ranking das regiões — '+L(metric);
   desenhaMapa(document.getElementById('map'),{fill:p=>colorFor(p[metric])});
-  if(document.getElementById('showPts').checked) pontos();
+  if(DATA.geojson && document.getElementById('showPts').checked) pontos();
   document.getElementById('legend').innerHTML =
     `<span style="font-weight:700;color:var(--navy)">Índice 0–100:</span>`+
     FAIXAS.map(([t,c])=>`<span><i style="background:${c}"></i>${t}</span>`).join('');
@@ -230,9 +286,21 @@ function v24(){
 
 /* ------------------------------------------- desempenho 2022 (acordeão) */
 function v22(){
+  if(DATA.votes22.suprimido){
+    document.getElementById('mapV').innerHTML='';
+    document.getElementById('vAccord').innerHTML=
+      `<div class="warn"><b>Camada de 2022 suprimida neste município.</b> ${DATA.votes22.motivo}
+       <br><br>As pautas e o índice de aderência continuam válidos e são exibidos normalmente —
+       o que está suprimido é apenas a contagem de votos, que seria enganosa.</div>`;
+    return;
+  }
+  const comCirc=document.getElementById('tgCirc').checked;
   desenhaMapa(document.getElementById('mapV'),{
     fill:p=>p.votos22==null?'#e6e9f2':colorFor(null),
-    circles:document.getElementById('tgCirc').checked?DATA.votes22.circ:null});
+    circles:comCirc?DATA.votes22.circ:null,
+    // Sem malha, o próprio ponto carrega o voto: rosa, dimensionado pela votação.
+    pfill:()=>PINK, praio:b=>comCirc?(b.votos22||0):0.0001,
+    ptitulo:'Lohanna · 2022'});
   const V=DATA.votes22, mx=Math.max(...V.regionais.map(r=>r.votos))||1;
   document.getElementById('vAccord').innerHTML=V.regionais.map((r,i)=>{
     const mb=Math.max(...r.bairros.map(b=>b.v))||1;
@@ -269,7 +337,7 @@ function mob(){
   const M=DATA.mob;
   document.getElementById('mobLogica').innerHTML=
    `<div class="insight"><b>Frente 1 – Consolidação (azul-marinho):</b> score = ${M.pesos.cons}.
-      Onde a base de <span class="yr y22">2022</span> já existe e a pauta adere: <b>volume e visibilidade</b> —
+      ${DATA.votes22.suprimido?'Onde a pauta adere com mais força':'Onde a base de <span class="yr y22">2022</span> já existe e a pauta adere'}: <b>volume e visibilidade</b> —
       panfletagem de alto fluxo, adesivaço, presença em pontos de concentração.</div>
     <div class="insight"><b>Frente 2 – Expansão (rosa):</b> score = ${M.pesos.exp}.
       Onde a pauta adere e o voto não chegou: <b>abrir território</b> — lideranças locais primeiro,
@@ -281,14 +349,16 @@ function mob(){
   const cons=new Set(M.cons.map(x=>x.b));
   desenhaMapa(document.getElementById('mapM'),{
     fill:p=>alvo.has(p.bairro)?(cons.has(p.bairro)?NAVY:PINK):'#e6e9f2',
-    sel:p=>alvo.has(p.bairro)});
+    sel:p=>alvo.has(p.bairro),
+    pfill:b=>alvo.has(b.Bairro)?(cons.has(b.Bairro)?NAVY:PINK):'#c9cee0',
+    praio:b=>alvo.has(b.Bairro)?b.setores:0.15*b.setores});
   const bloco=(t,cls,arr,campo)=>`<div class="front ${cls}"><h3>${t}
       <span class="sub">${arr.length} bairros</span></h3>
       ${arr.map((x,i)=>`<div class="trow"><span class="n">${i+1}</span>
         <div class="info"><b>${x.b}</b><span class="rg">${x.reg}</span>
           <div class="anc">ens. superior <em>${f1(x.sup)}</em> · LGBT <em>${f1(x.lgbt)}</em> ·
             gênero <em>${f1(x.gen)}</em> · antirracismo <em>${f1(x.rac)}</em><br>
-            <span class="yr y22">2022</span> ${fmt(x.votos22)} votos · ${x.setores} setores</div></div>
+${DATA.votes22.suprimido?'':`<span class="yr y22">2022</span> ${fmt(x.votos22)} votos · `}${x.setores} setores</div></div>
         <span class="sc">${f1(x[campo])}</span></div>`).join('')}</div>`;
   document.getElementById('lists').innerHTML=
     bloco('Consolidação','cons',M.cons,'cons')+bloco('Expansão','exp',M.exp,'exp');
@@ -317,10 +387,10 @@ function graficos(){
 }
 
 /* ------------------------------------------------------- tabela */
-let sortK='votos22', sortD=-1;
+let sortK=DATA.votes22.suprimido?'setores':'votos22', sortD=-1;
 const COLS=()=>[['Bairro','Bairro'],['regional','Região'],
   ...DATA.eixos.map(e=>[e.k,e.nome.split(' ')[0]]),
-  ['votos22','Lohanna 2022'],['setores','Set.']];
+  ...(DATA.votes22.suprimido?[]:[['votos22','Lohanna 2022']]),['setores','Set.']];
 function tabela(){
   const head=document.getElementById('tbHead');
   head.innerHTML=COLS().map(([k,t])=>`<th data-k="${k}">${t} <span class="arr">${k===sortK?(sortD<0?'▼':'▲'):''}</span></th>`).join('');
@@ -335,7 +405,7 @@ function tabela(){
   document.querySelector('#tb tbody').innerHTML=rows.map(b=>`<tr>
     <td><b>${b.Bairro}</b></td><td>${b.regional}</td>
     ${DATA.eixos.map(e=>`<td>${pill(b[e.k])}</td>`).join('')}
-    <td><b>${fmt(b.votos22)}</b></td><td>${b.setores}</td></tr>`).join('');
+    ${DATA.votes22.suprimido?'':`<td><b>${fmt(b.votos22)}</b></td>`}<td>${b.setores}</td></tr>`).join('');
   document.getElementById('countInfo').textContent=
     `${rows.length} bairros · classificação: alta ≥ 57 · média 43–57 · baixa < 43`;
 }
@@ -400,7 +470,8 @@ function foot(){
     `<b>Índice:</b> percentil médio do valor ajustado, normalizado por pauta, escala 0–100.`,
     `<b>Sem dupla contagem:</b> cada setor censitário entra uma única vez na soma de votos.`,
     m.cobertura?`<b>Cobertura:</b> ${m.setores_observados} de ${m.setores_declarados} setores do município (${f1(m.cobertura)}%) — os que têm endereço CNEFE correspondido. O índice descreve esses setores, não o município inteiro.`:null,
-    `<b>Filtro de robustez:</b> rankings de bairro exigem ao menos ${m.min_setores} setores.`,
+    `<b>Filtro de robustez:</b> rankings de bairro exigem ao menos ${m.min_setores} setores — ${m.min_setores_por_que}.`,
+    DATA.votes22.suprimido?`<b>ATENÇÃO — camada 2022 suprimida:</b> ${DATA.votes22.motivo}`:null,
     `<b>Ressalva:</b> 2022 e 2024 são pleitos e cargos diferentes e nunca são somados. A camada de 2024 está no nível municipal nesta versão.`,
     `Painel 100% offline: nenhuma requisição a servidor externo. Coordenadas em SIRGAS 2000 (EPSG:4674), equivalentes a WGS 84 nesta escala.`,
     `Gerado em ${m.gerado_em}.`,
@@ -411,6 +482,10 @@ function foot(){
 /* ------------------------------------------------------------ render */
 function render(){ cards(); insights(); mapaRanking(); }
 (function init(){
+  const fm=document.getElementById('fMin'), m=DATA.meta.min_setores;
+  [[1,'todos os bairros'],[2,'≥ 2 setores'],[3,'≥ 3 setores'],[5,'≥ 5 setores'],[10,'≥ 10 setores']]
+    .forEach(([v,t])=>fm.appendChild(new Option(t+(v===m?' (padrão deste município)':''),v)));
+  fm.value=String(m);
   const fr=document.getElementById('fReg');
   DATA.regionais.map(r=>r.regional).sort().forEach(r=>fr.appendChild(new Option(r,r)));
   render(); v24(); v22(); over(); mob(); graficos(); tabela(); tops(); comp(); foot();

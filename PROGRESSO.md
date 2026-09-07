@@ -366,3 +366,83 @@ Camadas em objetos separados (`votes22` / `votes24`); nenhum campo soma as duas.
 
 Ambas entram sem outra mudança quando o arquivo por local de votação chegar — o painel já
 está construído sobre a unidade geográfica correta.
+
+---
+
+## OS 10 PAINÉIS ENTREGUES (2026-09-06)
+
+Todos em `paineis/`, um arquivo `.html` autocontido por candidato, 100% offline.
+Reproduzíveis com `./gerar_todos.sh`.
+
+| Candidato | Município | Bairros | Regiões | Malha IBGE | Lohanna 2022 | Candidato 2024 | Corte |
+|---|---|---:|---:|---|---:|---|---:|
+| Sara Vitral | Belo Horizonte | 423 | 9 oficiais | sim | 87.255 | 2.136 (131º) | ≥5 |
+| Professor Gabriel Mendes | Betim | 98 | 11 oficiais | sim | 5.711 | não concorreu | ≥5 |
+| Fabão | Uberlândia | 69 | 6 clusters | sim | 5.173 | **14.596 (1º)** | ≥5 |
+| Sinara Campos | São João del-Rei | 8 | 6 clusters | sim | 1.737 | **2.355 (1º)** | ≥5 |
+| Kell Silva | Divinópolis | 138 | 5 clusters | não | **suprimida** | 2.195 (9º) | ≥5 |
+| Irene Melo Franco | Pará de Minas | 53 | 5 clusters | não | 3.830 | sem arquivo TSE | ≥3 |
+| Damires Rinarlly | Conselheiro Lafaiete | 69 | 5 clusters | não | 1.923 | sem arquivo TSE | ≥2 |
+| Marcelo Monteiro | Lagoa Santa | 51 | 5 clusters | não | 772 | sem arquivo TSE | ≥2 |
+| Douglas Verissimo | Curvelo | 43 | 5 clusters | não | 745 | sem arquivo TSE | ≥2 |
+| Pedro Sousa | Mariana | 50 | 5 clusters | não | 637 | sem arquivo TSE | ≥2 |
+
+Tamanhos: 0,32 MB a 1,74 MB — todos abaixo do teto de ~2 MB.
+
+### QA (§9) — os 10 aprovados
+
+Rodado em Chromium sobre cada arquivo (`qa_lote.py`): **0 erros de JavaScript, 0
+requisições de rede, 0 ocorrências de NaN/undefined/Infinity**, seletor de métrica
+atualizando mapa + ranking + legenda em conjunto, e sem estouro horizontal em 900 e
+380 px. Todos os totais conferidos contra as fontes: os votos de 2022 batem entre o
+card, a soma das regiões e a soma dos bairros, e os de 2024 batem com o TSE.
+
+### Três decisões novas, que o piloto não exercitou
+
+**1. Regionais oficiais quando existem.** O shapefile do IBGE traz `NM_DIST` e
+`NM_SUBDIST`. Em Belo Horizonte, os dois combinados dão exatamente as **9 regionais**
+do painel de referência (Barreiro e Venda Nova como distritos, mais as 7 internas);
+Betim tem as suas. Onde o IBGE não subdivide (Uberlândia, São João del-Rei e os seis
+sem malha), permanecem os clusters cardeais. Isso segue a ordem de preferência do §6:
+oficial primeiro, cluster só como recurso.
+
+**2. Mapa de pontos onde não há malha.** Seis municípios não têm bairros delimitados
+pelo IBGE. Neles o mapa deixa de ser coroplético e passa a ser de círculos — um por
+bairro, no centroide dos seus setores, colorido pelo índice e, na seção de 2022,
+dimensionado pelos votos. Mantém a leitura espacial sem inventar fronteira.
+
+**3. Filtro de robustez calibrado ao município.** O corte de 5 setores pressupõe
+bairros grandes. Onde a unidade vem do campo de endereço, a mediana cai para 1 ou 2
+setores e o corte de 5 esvaziaria o ranking (Mariana ficaria com 4 bairros). O corte
+passou a ser o maior de {5, 3, 2} que preserva massa crítica, e o rodapé de cada
+painel diz qual foi usado e por quê. Continua ajustável pelo seletor na tela e por
+`--min-setores`.
+
+### Divinópolis — camada de 2022 suprimida
+
+O painel da Kell Silva sai **sem a contagem de votos de 2022**, com a justificativa
+no card, nas leituras estratégicas e no rodapé. O índice de aderência, as 22 pautas,
+o mapa, os rankings e a camada de 2024 continuam íntegros — o que saiu foi só o número
+que seria enganoso. Os pesos do plano de mobilização foram renormalizados sobre as
+pautas, em vez de tratar dado ausente como ausência de voto.
+
+Para restaurar: regerar o arquivo de Divinópolis com o mesmo procedimento dos outros
+nove, ou reconstruir a camada a partir do `votacao_secao_2022_MG`. Depois é só rodar
+`gerar_todos.sh` sem o `--suprimir-votos22`.
+
+### O que continua pendente em todos
+
+- **Seção 7 (Sobreposição das duas bases)** e **Frente 3 (Reciprocidade)**: dependem do
+  TSE 2024 por local de votação. O bloco aparece com a explicação, não preenchido.
+- **Inteligência competitiva por bairro**: idem.
+- **Cinco municípios sem nenhum arquivo do TSE 2024** (Pará de Minas, Lagoa Santa,
+  Mariana, Conselheiro Lafaiete, Curvelo): esses painéis são de camada única.
+- **Professor Gabriel Mendes**: painel feito para **Betim**. Ele consta na planilha com
+  Betim e Belo Horizonte; o de BH sai com um comando, se quiser os dois.
+
+### Como regerar tudo
+
+```bash
+./gerar_todos.sh     # dados + montagem dos 10
+python3 qa_lote.py   # checklist do §9 em navegador real
+```

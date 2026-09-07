@@ -106,6 +106,7 @@ def main():
     flds = [f[0] for f in r.fields if f[0] != "DeletionFlag"]
     i_mun, i_bai = flds.index("NM_MUN"), flds.index("NM_BAIRRO")
     i_dist = flds.index("NM_DIST")
+    i_sub = flds.index("NM_SUBDIST")
 
     alvo = {norm(m) for m in MUNICIPIOS}
     por_mun = {}
@@ -145,6 +146,10 @@ def main():
                 "properties": {
                     "bairro": sr.record[i_bai],
                     "distrito": sr.record[i_dist],
+                    # Regional oficial quando o IBGE a publica. Em BH, subdistrito dá
+                    # as 7 regionais internas e distrito dá Barreiro e Venda Nova —
+                    # juntas, as 9 do painel de referência.
+                    "regiao": (sr.record[i_sub].strip() or sr.record[i_dist].strip()),
                 },
                 "geometry": arredondar(g),
             })

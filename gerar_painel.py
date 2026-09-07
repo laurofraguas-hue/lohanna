@@ -97,6 +97,14 @@ def carregar_geo(mun_slug):
     return None, None
 
 
+def regioes_oficiais(geo):
+    """bairro -> regional, a partir do campo `regiao` da malha do IBGE."""
+    if not geo:
+        return {}
+    return {f["properties"]["bairro"]: f["properties"].get("regiao")
+            for f in geo["features"] if f["properties"].get("regiao")}
+
+
 def carregar_tse24(mun_nome):
     alvo = norm(mun_nome)
     for p in sorted(os.listdir("dados/tse2024")) if os.path.isdir("dados/tse2024") else []:
@@ -193,7 +201,7 @@ def clusterizar(bairros_xy, n_alvo=6):
 
 # ------------------------------------------------------------- montagem
 
-def construir(mun_nome, apelido, numero=None, min_setores=5):
+def construir(mun_nome, apelido, numero=None, min_setores=None, suprimir22=None, sem2024=False):
     mun_slug = slug(mun_nome)
     df, p_ader = carregar_aderencia(mun_slug)
     geo, p_geo = carregar_geo(mun_slug)
@@ -225,7 +233,20 @@ def construir(mun_nome, apelido, numero=None, min_setores=5):
         lo = pd.to_numeric(sub["Longitude_Setor"], errors="coerce").dropna()
         if len(la) and len(lo):
             xy[b] = (float(lo.mean()), float(la.mean()))
-    reg_por_bairro = clusterizar({k: v for k, v in xy.items() if k != "Não classificado"})
+    # §6, ordem de preferência: regionais oficiais primeiro; clusters cardeais só
+    # quando o IBGE não publica subdivisão para o município.
+    reg_por_bairro, origem_reg = regioes_oficiais(geo), "oficial"
+    if len(set(reg_por_bairro.values())) < 2:
+        reg_por_bairro = clusterizar({k: v for k, v in xy.items() if k != "Não classificado"})
+        origem_reg = "cluster"
+    else:
+        # A malha nomeia os bairros; a tabela usa Bairro_Censo. A junção é por nome normalizado.
+        mapa = {norm(k): v for k, v in reg_por_bairro.items()}
+        reg_por_bairro = {b: mapa.get(norm(b)) for b in xy}
+        reg_por_bairro = {k: v for k, v in reg_por_bairro.items() if v}
+        if len(reg_por_bairro) < 0.5 * len(xy):
+            reg_por_bairro = clusterizar({k: v for k, v in xy.items() if k != "Não classificado"})
+            origem_reg = "cluster"
     tab["_reg"] = tab["_bairro"].map(reg_por_bairro).fillna("Não classificado")
 
     # ---- agregação por bairro e por região -----------------------------
@@ -238,9 +259,20 @@ def construir(mun_nome, apelido, numero=None, min_setores=5):
 
     bairros = agrega("_bairro").rename(columns={"_bairro": "Bairro"})
     bairros["regional"] = bairros["Bairro"].map(reg_por_bairro).fillna("Não classificado")
+    # Centroide de cada bairro: é o que sustenta o mapa de pontos onde não há malha.
+    bairros["lon"] = bairros["Bairro"].map(lambda b: round(xy[b][0], 5) if b in xy else None)
+    bairros["lat"] = bairros["Bairro"].map(lambda b: round(xy[b][1], 5) if b in xy else None)
     regionais = agrega("_reg").rename(columns={"_reg": "regional"})
 
     # ---- camada 2022 -----------------------------------------------------
+    if suprimir22:
+        # Município cujo Votos_Candidato está em escala incompatível com o setor
+        # censitário. Suprimir é a aplicação literal da regra de não inventar dado:
+        # o índice de aderência continua íntegro, só a contagem sai.
+        tab["_votos22"] = 0
+        bairros["votos22"] = 0
+        regionais["votos22"] = 0
+
     total22 = int(tab["_votos22"].sum())
     v22_reg = []
     for _, r in regionais.sort_values("votos22", ascending=False).iterrows():
@@ -253,20 +285,27 @@ def construir(mun_nome, apelido, numero=None, min_setores=5):
         })
     top_b = bairros.sort_values("votos22", ascending=False).iloc[0]
     votes22 = {
-        "total": total22, "granularidade": "setor censitário",
-        "regionais": v22_reg,
-        "top_regional": v22_reg[0]["regional"] if v22_reg else None,
-        "top_bairro": {"nome": top_b["Bairro"], "regional": top_b["regional"],
-                       "votos": int(top_b["votos22"])},
-        "circ": [[round(xy[b][1], 5), round(xy[b][0], 5), int(v), b,
+        "total": None if suprimir22 else total22,
+        "suprimido": bool(suprimir22), "motivo": suprimir22,
+        "granularidade": "setor censitário",
+        "regionais": [] if suprimir22 else v22_reg,
+        "top_regional": None if suprimir22 else (v22_reg[0]["regional"] if v22_reg else None),
+        "top_bairro": None if suprimir22 else {"nome": top_b["Bairro"],
+            "regional": top_b["regional"], "votos": int(top_b["votos22"])},
+        "circ": [] if suprimir22 else [[round(xy[b][1], 5), round(xy[b][0], 5), int(v), b,
                   reg_por_bairro.get(b, "Não classificado")]
                  for b, v in zip(bairros["Bairro"], bairros["votos22"])
                  if b in xy and v > 0],
     }
+    if suprimir22:
+        # Sem voto confiável, o campo sai do registro do bairro em vez de exibir zero,
+        # que seria lido como "nenhum voto" em vez de "não medido".
+        for col in (bairros, regionais):
+            col["votos22"] = None
 
     # ---- camada 2024 -----------------------------------------------------
     votes24 = None
-    if tse is not None:
+    if tse is not None and not sem2024:
         ver = tse[(tse["DS_CARGO"].map(norm) == "VEREADOR") & (tse["SQ_CANDIDATO"] > 0)].copy()
         ver = ver.sort_values("QT_VOTOS_TOTAL", ascending=False).reset_index(drop=True)
         tot_nom = int(ver["QT_VOTOS_TOTAL"].sum())
@@ -277,9 +316,17 @@ def construir(mun_nome, apelido, numero=None, min_setores=5):
         else:
             alvo = ver[ver["NM_VOTAVEL"].map(norm).str.contains(norm(apelido.split()[0]), na=False)]
         if not len(alvo):
-            raise SystemExit(f"não localizei o candidato (apelido={apelido!r}, numero={numero!r}) "
-                             f"entre os {len(ver)} candidatos a vereador de {mun_nome}")
-        eu = alvo.iloc[0]
+            if sem2024:
+                # Candidato que não disputou 2024: o painel é de camada única e a
+                # seção correspondente é omitida, não preenchida.
+                tse = None
+            else:
+                raise SystemExit(
+                    f"não localizei o candidato (apelido={apelido!r}, numero={numero!r}) entre os "
+                    f"{len(ver)} candidatos a vereador de {mun_nome}. Se ele não disputou 2024, "
+                    f"use --sem-2024.")
+        else:
+            eu = alvo.iloc[0]
         def linha(r, i):
             pt = re.sub(r"\d+$", "", str(r["NR_VOTAVEL"]))[:2]
             return {"nr": str(r["NR_VOTAVEL"]), "nome": r["NM_VOTAVEL"],
@@ -300,6 +347,20 @@ def construir(mun_nome, apelido, numero=None, min_setores=5):
             "n_secoes": int(tse["QT_SECOES_COM_VOTO"].max()),
             "n_zonas": int(tse["QT_ZONAS_COM_VOTO"].max()),
         }
+
+    # ---- filtro de robustez, calibrado ao município ----------------------
+    # O corte de 5 setores do painel de BH pressupõe bairros grandes. Onde o IBGE
+    # não delimita bairros, a unidade vem do campo de endereço e a mediana cai para
+    # 1 ou 2 setores — o mesmo corte esvaziaria o ranking. Escolhe-se então o maior
+    # corte que ainda preserva massa crítica de bairros.
+    if min_setores is None:
+        cand_b = bairros[bairros["Bairro"] != "Não classificado"]
+        alvo_n = min(20, math.ceil(0.6 * len(cand_b)))
+        min_setores = 2
+        for m in (5, 3, 2):
+            if (cand_b["setores"] >= m).sum() >= alvo_n:
+                min_setores = m
+                break
 
     # ---- tops por pauta (com filtro de robustez) -------------------------
     robusto = bairros[(bairros["setores"] >= min_setores) &
@@ -347,7 +408,7 @@ def construir(mun_nome, apelido, numero=None, min_setores=5):
             v += w * x
         return round(v, 1)
 
-    vmax = max(1, robusto["votos22"].max()) if len(robusto) else 1
+    vmax = 1 if suprimir22 else (max(1, int(robusto["votos22"].max())) if len(robusto) else 1)
     cons_p = {"sup": .40, "lgbt": .25}
     exp_p = {"rac": .45, "gen": .35}
     linhas = []
@@ -355,23 +416,29 @@ def construir(mun_nome, apelido, numero=None, min_setores=5):
         d = r.to_dict()
         sc = score(d, cons_p)
         se = score(d, exp_p)
-        vn = 100 * r["votos22"] / vmax
+        vn = 0 if suprimir22 else 100 * (r["votos22"] or 0) / vmax
         linhas.append({
             "b": r["Bairro"], "reg": r["regional"],
             "lat": round(xy[r["Bairro"]][1], 5) if r["Bairro"] in xy else None,
             "lon": round(xy[r["Bairro"]][0], 5) if r["Bairro"] in xy else None,
             "sup": d.get("sup"), "lgbt": d.get("lgbt"), "gen": d.get("gen"),
-            "rac": d.get("rac"), "votos22": int(r["votos22"]), "setores": int(r["setores"]),
-            "cons": None if sc is None else round(sc + .35 * vn, 1),
-            "exp": None if se is None else round(se + .20 * (100 - vn), 1),
+            "rac": d.get("rac"),
+            "votos22": None if suprimir22 else int(r["votos22"] or 0),
+            "setores": int(r["setores"]),
+            # Sem a camada de voto os pesos são renormalizados sobre as pautas, em vez
+            # de tratar dado ausente como ausência de voto — que inverteria o sentido.
+            "cons": None if sc is None else round(sc / .65 if suprimir22 else sc + .35 * vn, 1),
+            "exp": None if se is None else round(se / .80 if suprimir22 else se + .20 * (100 - vn), 1),
         })
     mob = {
         "cons": sorted([x for x in linhas if x["cons"] is not None],
                        key=lambda x: -x["cons"])[:12],
         "exp": sorted([x for x in linhas if x["exp"] is not None],
                       key=lambda x: -x["exp"])[:12],
-        "pesos": {"cons": "40% ensino superior + 25% LGBT + 35% votos 2022",
-                  "exp": "45% antirracismo + 35% gênero + 20% ausência de voto"},
+        "pesos": ({"cons": "62% ensino superior + 38% LGBT (pesos renormalizados: a camada de voto de 2022 está suprimida neste município)",
+                   "exp": "56% antirracismo + 44% gênero (idem)"} if suprimir22 else
+                  {"cons": "40% ensino superior + 25% LGBT + 35% votos 2022",
+                   "exp": "45% antirracismo + 35% gênero + 20% ausência de voto"}),
     }
 
     # ---- quebra por eixo (gráficos de barras) ----------------------------
@@ -396,6 +463,12 @@ def construir(mun_nome, apelido, numero=None, min_setores=5):
         "gerado_em": pd.Timestamp.now().strftime("%d/%m/%Y"),
         "unidade": ("bairros do IBGE (Censo 2022)" if geo is not None
                     else "bairros declarados na base CNEFE, sem malha oficial"),
+        "regioes_origem": origem_reg,
+        "regioes_por_que": ("regionais oficiais publicadas pelo IBGE (distrito/subdistrito)"
+                            if origem_reg == "oficial" else
+                            "o IBGE não subdivide este município, então os bairros foram "
+                            "agrupados em Centro, Norte, Sul, Leste e Oeste pela posição "
+                            "relativa ao centroide da cidade"),
         "unidade_por_que": ("A malha de bairros do IBGE cobre este município, e a coluna "
                             "Bairro_Censo casa com ela." if geo is not None else
                             "O IBGE não delimita bairros neste município; a unidade vem do "
@@ -403,7 +476,12 @@ def construir(mun_nome, apelido, numero=None, min_setores=5):
                             "dos seus setores."),
         "setores_declarados": dec, "setores_observados": obs,
         "cobertura": round(100 * obs / dec, 1) if dec else None,
-        "min_setores": min_setores,
+        "min_setores": int(min_setores),
+        "min_setores_por_que": (
+            "corte padrão do painel de referência" if min_setores == 5 else
+            f"corte reduzido para {min_setores}: neste município a unidade de bairro é "
+            f"pequena (mediana de {int(bairros[bairros['Bairro']!='Não classificado']['setores'].median())} "
+            f"setores por bairro) e o corte de 5 esvaziaria os rankings"),
         "fontes": {
             "2022": f"{os.path.basename(p_ader)} — aderência por setor censitário e votos "
                     f"da Lohanna França (2022), IBGE Censo 2022 + CNEFE",
@@ -425,7 +503,10 @@ def construir(mun_nome, apelido, numero=None, min_setores=5):
         "regionais": regionais.to_dict("records"),
         "bairros": bairros.to_dict("records"),
         "setores": [[round(float(r["Latitude_Setor"]), 5), round(float(r["Longitude_Setor"]), 5),
-                     r["_bairro"], r["_reg"]] + [None if pd.isna(r[k]) else float(r[k]) for k in mk]
+                     r["_bairro"], r["_reg"]]
+                    # Os pontos por setor são lidos como cor de faixa, não como número:
+                    # inteiro basta e reduz sensivelmente o tamanho do arquivo.
+                    + [None if pd.isna(r[k]) else int(round(r[k])) for k in mk]
                     for _, r in tab.iterrows()
                     if pd.notna(r["Latitude_Setor"]) and pd.notna(r["Longitude_Setor"])],
         "tops": tops, "votes22": votes22, "votes24": votes24,
@@ -454,11 +535,17 @@ def main():
     ap.add_argument("--candidato", required=True)
     ap.add_argument("--numero", default=None,
                     help="número de urna do candidato em 2024 (chave confiável)")
-    ap.add_argument("--min-setores", type=int, default=5)
+    ap.add_argument("--min-setores", type=int, default=None,
+                    help="corte de robustez; se omitido, é calibrado ao município")
+    ap.add_argument("--sem-2024", action="store_true",
+                    help="o candidato não disputou 2024; o painel fica de camada única")
+    ap.add_argument("--suprimir-votos22", default=None, metavar="MOTIVO",
+                    help="suprime a camada de votos de 2022 e registra o motivo no painel")
     ap.add_argument("--saida", default=None)
     a = ap.parse_args()
 
-    D = construir(a.municipio, a.candidato, a.numero, a.min_setores)
+    D = construir(a.municipio, a.candidato, a.numero, a.min_setores,
+                  a.suprimir_votos22, a.sem_2024)
     dest = a.saida or f"dados/DATA_{slug(a.candidato)}_{slug(a.municipio)}.json"
     os.makedirs(os.path.dirname(dest), exist_ok=True)
     D = limpar(D)
@@ -466,9 +553,13 @@ def main():
         # allow_nan=False faz a gravação falhar em vez de emitir NaN silenciosamente.
         json.dump(D, f, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
     print(f"-> {dest} ({os.path.getsize(dest)/1024:.0f} KB)")
+    print(f"   corte de robustez: >= {D['meta']['min_setores']} setores")
     print(f"   métricas: {len(D['mk'])} | bairros: {len(D['bairros'])} | "
           f"regiões: {len(D['regionais'])} | setores: {len(D['setores'])}")
-    print(f"   Lohanna 2022: {D['votes22']['total']:,} votos")
+    if D["votes22"]["suprimido"]:
+        print(f"   Lohanna 2022: SUPRIMIDA — {D['votes22']['motivo'][:70]}...")
+    else:
+        print(f"   Lohanna 2022: {D['votes22']['total']:,} votos")
     if D["votes24"] and D["votes24"]["candidato"]:
         c = D["votes24"]["candidato"]
         print(f"   {a.candidato} 2024: {c['votos']:,} votos ({c['pos']}º de {D['votes24']['n_cands']})")
