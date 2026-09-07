@@ -446,3 +446,44 @@ nove, ou reconstruir a camada a partir do `votacao_secao_2022_MG`. Depois é só
 ./gerar_todos.sh     # dados + montagem dos 10
 python3 qa_lote.py   # checklist do §9 em navegador real
 ```
+
+---
+
+## Camada de 2024 por local de votação — 5 painéis atualizados (2026-09-07)
+
+Com os arquivos do TSE por seção já colhidos, cinco painéis ganharam a camada de 2024
+que antes não tinham (ou tinham só o total municipal):
+
+| Candidato | Município | Votos 2024 | Posição | Locais | Vence em |
+|---|---|---:|---|---:|---:|
+| Sinara Campos | São João del-Rei | 2.355 | **1º de 197** | 54 | **7** |
+| Marcelo Monteiro | Lagoa Santa | 1.156 | 6º de 214 | 31 | 2 |
+| Douglas Veríssimo | Curvelo | 1.058 | 7º de 204 | 30 | 3 |
+| Pedro Sousa | Mariana | 620 | 25º de 155 | 35 | 0 |
+| Irene Melo Franco | Pará de Minas | 619 | 21º de 224 | 36 | 0 |
+
+Validado: para os cinco, o total do painel bate com a soma das seções na fonte **e** com
+a soma dos locais no próprio painel.
+
+### O que a seção de 2024 passou a mostrar
+
+- **desempenho local a local**, ordenado, com endereço e zona de cada local;
+- selo **"1º no local"** onde o candidato lidera;
+- os **três mais votados em cada local**, com o aliado destacado — inteligência
+  competitiva de verdade, no nível em que a campanha age;
+- **concentração**: quanto os oito melhores locais representam da votação total;
+- **capilaridade**: em quantos dos locais do município teve ao menos um voto.
+
+### Ferramentas novas
+
+- `colher.py` — decodifica os downloads que o harness grava em disco.
+- `agregar_2024.py` — consolida os CSVs por seção em agregados por local, sem dupla
+  contagem. Validado contra os totais municipais conhecidos.
+
+### O que ainda falta
+
+- **Coordenada dos locais de votação.** É o único item que separa o projeto da seção de
+  sobreposição por bairro e da frente de Reciprocidade. O bloco no painel agora explica
+  exatamente isso, em vez de dizer genericamente que a camada de 2024 não existe.
+- **29 arquivos do TSE** (Belo Horizonte, Uberlândia, Betim, Divinópolis e Conselheiro
+  Lafaiete), todos acima do teto prático de ~6 MB do conector.

@@ -97,12 +97,107 @@ def carregar_geo(mun_slug):
     return None, None
 
 
+def montar_votes24_locais(df, apelido, numero, mun_nome):
+    """Camada de 2024 com quebra por local de votação.
+
+    Cada seção já foi contada uma única vez na agregação; aqui só se soma por local,
+    de modo que o total do candidato reproduz o total oficial do município."""
+    df["QT_VOTOS"] = pd.to_numeric(df["QT_VOTOS"], errors="coerce").fillna(0).astype(int)
+    df["QT_SECOES"] = pd.to_numeric(df["QT_SECOES"], errors="coerce").fillna(0).astype(int)
+    nominal = df[(df["DS_CARGO"].map(norm) == "VEREADOR") &
+                 (pd.to_numeric(df["SQ_CANDIDATO"], errors="coerce") > 0)].copy()
+    if nominal.empty:
+        return None
+
+    tot_cand = (nominal.groupby(["NR_VOTAVEL", "NM_VOTAVEL"], as_index=False)["QT_VOTOS"]
+                .sum().sort_values("QT_VOTOS", ascending=False).reset_index(drop=True))
+    tot_nom = int(tot_cand["QT_VOTOS"].sum())
+
+    if numero is None:
+        raise SystemExit(f"{mun_nome}: informe --numero para localizar {apelido} em 2024")
+    alvo = tot_cand[tot_cand["NR_VOTAVEL"].astype(str) == str(numero)]
+    if alvo.empty:
+        raise SystemExit(f"{mun_nome}: número {numero} não está entre os "
+                         f"{len(tot_cand)} candidatos a vereador de 2024")
+    pos = int(alvo.index[0]) + 1
+    eu = alvo.iloc[0]
+
+    def linha(r, i):
+        return {"nr": str(r["NR_VOTAVEL"]), "nome": r["NM_VOTAVEL"],
+                "votos": int(r["QT_VOTOS"]), "pos": i + 1,
+                "pct": round(100 * r["QT_VOTOS"] / tot_nom, 2)}
+
+    # ---- desempenho do candidato local a local ----
+    meu = nominal[nominal["NR_VOTAVEL"].astype(str) == str(numero)]
+    por_local_tot = nominal.groupby("NR_LOCAL_VOTACAO", as_index=False).agg(
+        tot=("QT_VOTOS", "sum"))
+    info = df.drop_duplicates("NR_LOCAL_VOTACAO").set_index("NR_LOCAL_VOTACAO")
+
+    locais = []
+    for _, r in meu.groupby("NR_LOCAL_VOTACAO", as_index=False)["QT_VOTOS"].sum().iterrows():
+        L = r["NR_LOCAL_VOTACAO"]
+        tot = int(por_local_tot.loc[por_local_tot["NR_LOCAL_VOTACAO"] == L, "tot"].iloc[0])
+        no_local = (nominal[nominal["NR_LOCAL_VOTACAO"] == L]
+                    .groupby(["NR_VOTAVEL", "NM_VOTAVEL"], as_index=False)["QT_VOTOS"].sum()
+                    .sort_values("QT_VOTOS", ascending=False).reset_index(drop=True))
+        minha_pos = int(no_local[no_local["NR_VOTAVEL"].astype(str)
+                                 == str(numero)].index[0]) + 1
+        locais.append({
+            "nr": str(L), "nome": str(info.loc[L, "NM_LOCAL_VOTACAO"]),
+            "end": str(info.loc[L, "DS_LOCAL_VOTACAO_ENDERECO"]),
+            "zona": str(info.loc[L, "NR_ZONA"]),
+            "v": int(r["QT_VOTOS"]), "tot": tot,
+            "pct": round(100 * r["QT_VOTOS"] / tot, 2) if tot else None,
+            "pos": minha_pos, "n": len(no_local),
+            "lideres": [{"nome": x["NM_VOTAVEL"], "nr": str(x["NR_VOTAVEL"]),
+                         "v": int(x["QT_VOTOS"])}
+                        for _, x in no_local.head(3).iterrows()],
+        })
+    locais.sort(key=lambda x: -x["v"])
+
+    n_loc = int(nominal["NR_LOCAL_VOTACAO"].nunique())
+    top8 = sum(x["v"] for x in locais[:8])
+    pref = df[(df["DS_CARGO"].map(norm) == "PREFEITO") &
+              (pd.to_numeric(df["SQ_CANDIDATO"], errors="coerce") > 0)]
+    pref = (pref.groupby("NM_VOTAVEL", as_index=False)["QT_VOTOS"].sum()
+            .sort_values("QT_VOTOS", ascending=False).head(3))
+
+    return {
+        "granularidade": "local de votação",
+        "total_nominal": tot_nom, "n_cands": len(tot_cand),
+        "n_locais": n_loc,
+        "n_secoes": int(df.groupby("NR_LOCAL_VOTACAO")["QT_SECOES"].max().sum()),
+        "n_zonas": int(df["NR_ZONA"].nunique()),
+        "candidato": {**linha(eu, pos - 1),
+                      "locais": len(locais),
+                      # seções em que o candidato teve ao menos um voto
+                      "secoes": int(meu["QT_SECOES"].sum()),
+                      "vence_em": sum(1 for x in locais if x["pos"] == 1),
+                      "top8_pct": round(100 * top8 / int(eu["QT_VOTOS"]), 1)
+                      if eu["QT_VOTOS"] else None},
+        "mais_votados": [linha(r, i) for i, r in tot_cand.head(15).iterrows()],
+        "locais": locais,
+        "prefeito": [{"nome": r["NM_VOTAVEL"], "votos": int(r["QT_VOTOS"])}
+                     for _, r in pref.iterrows()],
+    }
+
+
 def regioes_oficiais(geo):
     """bairro -> regional, a partir do campo `regiao` da malha do IBGE."""
     if not geo:
         return {}
     return {f["properties"]["bairro"]: f["properties"].get("regiao")
             for f in geo["features"] if f["properties"].get("regiao")}
+
+
+def carregar_locais24(mun_slug):
+    """Agregados do TSE 2024 por local de votação, quando já colhidos."""
+    for cand in (mun_slug, mun_slug.replace("del_rey", "del_rei"),
+                 mun_slug.replace("del_rei", "del_rey")):
+        p = f"dados/tse2024_locais/locais_{cand}.csv"
+        if os.path.exists(p):
+            return pd.read_csv(p, sep=";", dtype=str, encoding="utf-8"), p
+    return None, None
 
 
 def carregar_tse24(mun_nome):
@@ -305,7 +400,11 @@ def construir(mun_nome, apelido, numero=None, min_setores=None, suprimir22=None,
 
     # ---- camada 2024 -----------------------------------------------------
     votes24 = None
-    if tse is not None and not sem2024:
+    loc24, p_loc24 = carregar_locais24(mun_slug)
+    if loc24 is not None and not sem2024:
+        votes24 = montar_votes24_locais(loc24, apelido, numero, mun_nome)
+        p_tse = p_loc24
+    elif tse is not None and not sem2024:
         ver = tse[(tse["DS_CARGO"].map(norm) == "VEREADOR") & (tse["SQ_CANDIDATO"] > 0)].copy()
         ver = ver.sort_values("QT_VOTOS_TOTAL", ascending=False).reset_index(drop=True)
         tot_nom = int(ver["QT_VOTOS_TOTAL"].sum())

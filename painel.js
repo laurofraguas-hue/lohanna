@@ -135,7 +135,8 @@ function cards(){
   const topM=[...robCards].sort((a,b)=>b[metric]-a[metric])[0];
   const el=[];
   if(c) el.push(`<div class="card"><h3>${DATA.apelido} — vereador · 2024</h3><div class="v">${fmt(c.votos)}</div>
-    <div class="s">${c.pos}º de ${v24.n_cands} candidatos · ${f1(c.pct)}% dos votos nominais</div></div>`);
+    <div class="s">${c.pos}º de ${v24.n_cands} candidatos · ${f1(c.pct)}% dos votos nominais${
+      c.vence_em!=null?` · 1º lugar em ${c.vence_em} de ${c.locais} locais`:''}</div></div>`);
   if(!v22.suprimido){
     el.push(`<div class="card"><h3>Lohanna França — 2022</h3><div class="v">${fmt(v22.total)}</div>
       <div class="s">no município, somando ${DATA.setores.length.toLocaleString('pt-BR')} setores censitários, cada um uma única vez</div></div>`);
@@ -256,10 +257,15 @@ function v24(){
   const v=DATA.votes24, box=document.getElementById('v24');
   if(!v){document.getElementById('pV24').style.display='none';return;}
   const c=v.candidato;
-  let h=`<div class="note"><b>Granularidade municipal.</b> O arquivo do TSE recebido traz o total de cada
-    candidato no município inteiro — não há votos por seção, local de votação, zona ou bairro. Por isso esta
-    seção é um bloco de contexto, e não o acordeão por região que o painel de 2022 tem logo abaixo.
-    Com o arquivo por local de votação, ela vira camada de mapa.</div>`;
+  const porLocal = v.granularidade==='local de votação' && v.locais && v.locais.length;
+  let h = porLocal
+    ? `<div class="note"><b>Quebra por local de votação.</b> Os votos vêm das seções do TSE, cada uma contada
+       uma única vez e somada por local. Ainda não há mapa desta camada porque falta a coordenada de cada
+       local; assim que ela chegar, estes mesmos números vão para o mapa por bairro e fecham a sobreposição
+       com <span class="yr y22">2022</span>.</div>`
+    : `<div class="note"><b>Granularidade municipal.</b> O arquivo do TSE recebido traz o total de cada
+       candidato no município inteiro — não há votos por seção, local de votação, zona ou bairro. Por isso esta
+       seção é um bloco de contexto, e não o acordeão por região que o painel de 2022 tem logo abaixo.</div>`;
   h+=`<div class="big">
     <div class="p"><div class="k">Votos de ${DATA.apelido} · 2024</div><div class="n">${fmt(c.votos)}</div>
       <div class="d">${f1(c.pct)}% dos ${fmt(v.total_nominal)} votos nominais a vereador</div></div>
@@ -278,6 +284,31 @@ function v24(){
       <span class="pt">${r.nr}</span>
       <span class="bar" style="width:${(120*r.votos/mx).toFixed(0)}px"></span>
       <span class="v">${fmt(r.votos)}</span><span class="pc">${f1(r.pct)}%</span></div>`;}).join('');
+  if(porLocal){
+    const L=v.locais, mx=L[0].v;
+    h+=`<h3 style="font-size:.85rem;color:var(--navy);margin:16px 0 8px;">
+        ${DATA.apelido} local a local <span style="font-weight:400;opacity:.75">
+        (${L.length} locais · vence em ${c.vence_em} · os 8 melhores concentram ${f1(c.top8_pct)}% da votação)</span></h3>`;
+    h+=`<div style="max-height:420px;overflow:auto;border:1.5px solid #e3e6f0;border-radius:10px;">`;
+    L.forEach((x,i)=>{
+      const venceu = x.pos===1;
+      h+=`<div class="vrow${venceu?' lead2':''}" style="padding:7px 12px;align-items:flex-start;">
+        <span class="n">${i+1}</span>
+        <div style="flex:1;min-width:0;">
+          <b style="color:${venceu?'var(--pink)':'var(--navy)'}">${x.nome}</b>
+          ${venceu?'<span class="badge" style="margin-left:6px">1º no local</span>':
+                   `<span class="rg" style="color:var(--muted);font-size:.7rem;margin-left:6px">${x.pos}º de ${x.n}</span>`}
+          <div style="font-size:.72rem;color:var(--muted);margin-top:2px;">${x.end} · zona ${x.zona}</div>
+          <div style="font-size:.73rem;margin-top:3px;">mais votados aqui:
+            ${x.lideres.map(l=>`<span style="color:${l.nr===String(DATA.numero)?'var(--pink)':'var(--txt)'};font-weight:${l.nr===String(DATA.numero)?'700':'400'}">${l.nome.split(/\s+/).slice(0,2).join(' ')} ${fmt(l.v)}</span>`).join(' · ')}</div>
+        </div>
+        <span class="bar2" style="width:${(70*x.v/mx).toFixed(0)}px;align-self:center"></span>
+        <span class="v" style="min-width:64px">${fmt(x.v)}</span>
+        <span class="pc" style="min-width:46px;color:var(--muted);font-size:.72rem;text-align:right">${f1(x.pct)}%</span>
+      </div>`;
+    });
+    h+=`</div>`;
+  }
   if(v.prefeito&&v.prefeito.length)
     h+=`<p style="font-size:.76rem;color:var(--muted);margin-top:12px;">Contexto — prefeito eleito em 2024:
       <b>${v.prefeito[0].nome}</b> (${fmt(v.prefeito[0].votos)} votos).</p>`;
@@ -321,7 +352,18 @@ document.getElementById('tgCirc').onchange=v22;
 function over(){
   const box=document.getElementById('over');
   if(DATA.votes24 && DATA.votes24.granularidade!=='municipal'){ box.innerHTML='<div class="note">—</div>'; return; }
-  box.innerHTML=`<div class="warn"><b>Seção indisponível nesta versão.</b> A comparação território a território
+  const comLocal = DATA.votes24 && DATA.votes24.granularidade==='local de votação';
+  box.innerHTML = comLocal
+   ? `<div class="warn"><b>Falta só a coordenada dos locais de votação.</b> A camada de
+      <span class="yr y24">2024</span> já está por <b>local de votação</b> — ${DATA.votes24.n_locais} locais
+      neste município — e a de <span class="yr y22">2022</span> por setor censitário, agregada a bairro.
+      O que impede o cruzamento é que os locais de votação ainda não têm latitude e longitude, sem as quais
+      não dá para dizer a que bairro cada um pertence.
+      <br><br>Com o arquivo de eleitorado por local de votação, que traz essa coordenada, a
+      <b>sobreposição por bairro</b>, os <b>quatro quadrantes</b> e a frente de <b>Reciprocidade</b> entram
+      sem nenhuma outra mudança.
+      <br><br>Enquanto isso, o desempenho local a local está na seção de 2024, acima.</div>`
+   : `<div class="warn"><b>Seção indisponível nesta versão.</b> A comparação território a território
     entre a base de <span class="yr y24">2024</span> e a de <span class="yr y22">2022</span> — com scatter,
     correlação de Spearman e os quatro quadrantes (base comum, território do candidato, território da Lohanna e
     vazio compartilhado) — exige as duas camadas na mesma unidade geográfica.
