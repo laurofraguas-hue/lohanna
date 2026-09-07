@@ -1,0 +1,549 @@
+CD_SETOR,bairro,situacao,distrito,fonte_nome
+312230605000001,Centro,Urbana,Divinópolis,CNEFE
+312230605000002,Centro,Urbana,Divinópolis,vizinho
+312230605000003,Centro,Urbana,Divinópolis,CNEFE
+312230605000004,Centro,Urbana,Divinópolis,CNEFE
+312230605000005,Centro,Urbana,Divinópolis,CNEFE
+312230605000006,Centro,Urbana,Divinópolis,CNEFE
+312230605000007,Centro,Urbana,Divinópolis,vizinho
+312230605000008,Vila Cruzeiro,Urbana,Divinópolis,vizinho
+312230605000009,Centro,Urbana,Divinópolis,CNEFE
+312230605000010,Centro,Urbana,Divinópolis,CNEFE
+312230605000011,Centro,Urbana,Divinópolis,CNEFE
+312230605000012,Centro,Urbana,Divinópolis,CNEFE
+312230605000013,Centro,Urbana,Divinópolis,CNEFE
+312230605000014,Centro,Urbana,Divinópolis,CNEFE
+312230605000015,Sidil,Urbana,Divinópolis,vizinho
+312230605000016,Sidil,Urbana,Divinópolis,CNEFE
+312230605000017,Centro,Urbana,Divinópolis,CNEFE
+312230605000018,Centro,Urbana,Divinópolis,vizinho
+312230605000019,Vila Cruzeiro,Urbana,Divinópolis,vizinho
+312230605000020,Vila Cruzeiro,Urbana,Divinópolis,CNEFE
+312230605000021,Santa Clara,Urbana,Divinópolis,CNEFE
+312230605000022,Santa Clara,Urbana,Divinópolis,vizinho
+312230605000023,Centro,Urbana,Divinópolis,CNEFE
+312230605000024,Centro,Urbana,Divinópolis,CNEFE
+312230605000025,Centro,Urbana,Divinópolis,vizinho
+312230605000026,Centro,Urbana,Divinópolis,vizinho
+312230605000027,Centro,Urbana,Divinópolis,vizinho
+312230605000028,Centro,Urbana,Divinópolis,vizinho
+312230605000029,Centro,Urbana,Divinópolis,CNEFE
+312230605000030,Catalao,Urbana,Divinópolis,vizinho
+312230605000031,Planalto,Urbana,Divinópolis,vizinho
+312230605000032,Vila Santo Antonio,Urbana,Divinópolis,vizinho
+312230605000033,Ipiranga,Urbana,Divinópolis,CNEFE
+312230605000034,Santo Antonio,Urbana,Divinópolis,CNEFE
+312230605000035,Jardim Capitao Silva,Urbana,Divinópolis,vizinho
+312230605000036,Ipiranga,Urbana,Divinópolis,CNEFE
+312230605000037,Ipiranga,Urbana,Divinópolis,CNEFE
+312230605000038,Jardim Nova America,Urbana,Divinópolis,CNEFE
+312230605000040,Santa Clara,Urbana,Divinópolis,CNEFE
+312230605000041,Centro,Urbana,Divinópolis,CNEFE
+312230605000042,Antonio Fonseca,Urbana,Divinópolis,vizinho
+312230605000043,Esplanada,Urbana,Divinópolis,CNEFE
+312230605000044,Esplanada,Urbana,Divinópolis,CNEFE
+312230605000045,Sao Joao de Deus,Urbana,Divinópolis,vizinho
+312230605000046,Espirito Santo,Urbana,Divinópolis,vizinho
+312230605000047,Espirito Santo,Urbana,Divinópolis,CNEFE
+312230605000048,Manoel Valinhas,Urbana,Divinópolis,CNEFE
+312230605000050,Manoel Valinhas,Urbana,Divinópolis,vizinho
+312230605000051,Manoel Valinhas,Urbana,Divinópolis,vizinho
+312230605000052,Manoel Valinhas,Urbana,Divinópolis,vizinho
+312230605000053,Bom Pastor,Urbana,Divinópolis,vizinho
+312230605000054,Residencial Sao Miguel,Urbana,Divinópolis,vizinho
+312230605000056,Manoel Valinhas,Urbana,Divinópolis,vizinho
+312230605000057,Manoel Valinhas,Urbana,Divinópolis,CNEFE
+312230605000058,Universitario,Urbana,Divinópolis,CNEFE
+312230605000059,Halim Souki,Urbana,Divinópolis,CNEFE
+312230605000060,Itai,Urbana,Divinópolis,CNEFE
+312230605000061,Del Rey,Urbana,Divinópolis,CNEFE
+312230605000063,Itai,Urbana,Divinópolis,CNEFE
+312230605000064,Itai,Urbana,Divinópolis,CNEFE
+312230605000065,Sao Luiz,Urbana,Divinópolis,CNEFE
+312230605000066,Sao Luiz,Urbana,Divinópolis,CNEFE
+312230605000067,Alto Sao Joao de Deus,Urbana,Divinópolis,CNEFE
+312230605000068,Sao Joao de Deus,Urbana,Divinópolis,CNEFE
+312230605000069,Sao Joao de Deus,Urbana,Divinópolis,CNEFE
+312230605000070,Niteroi,Urbana,Divinópolis,CNEFE
+312230605000072,Niteroi,Urbana,Divinópolis,vizinho
+312230605000073,Niteroi,Urbana,Divinópolis,CNEFE
+312230605000074,Porto Velho,Urbana,Divinópolis,vizinho
+312230605000075,Porto Velho,Urbana,Divinópolis,CNEFE
+312230605000076,Porto Velho,Urbana,Divinópolis,CNEFE
+312230605000077,Porto Velho,Urbana,Divinópolis,CNEFE
+312230605000078,Porto Velho,Urbana,Divinópolis,CNEFE
+312230605000079,Porto Velho,Urbana,Divinópolis,vizinho
+312230605000080,Porto Velho,Urbana,Divinópolis,vizinho
+312230605000081,Porto Velho,Urbana,Divinópolis,CNEFE
+312230605000084,Interlagos,Urbana,Divinópolis,CNEFE
+312230605000085,Interlagos,Urbana,Divinópolis,CNEFE
+312230605000086,Interlagos,Urbana,Divinópolis,CNEFE
+312230605000087,Ponte Funda,Urbana,Divinópolis,CNEFE
+312230605000089,Nacoes,Urbana,Divinópolis,CNEFE
+312230605000090,Sagrada Familia,Urbana,Divinópolis,CNEFE
+312230605000091,Nacoes,Urbana,Divinópolis,CNEFE
+312230605000092,Vale do Sol,Urbana,Divinópolis,CNEFE
+312230605000096,Sagrada Familia,Urbana,Divinópolis,CNEFE
+312230605000097,Dona Rosa,Urbana,Divinópolis,CNEFE
+312230605000098,Santa Rosa,Urbana,Divinópolis,CNEFE
+312230605000099,Santa Rosa,Urbana,Divinópolis,CNEFE
+312230605000100,Jusa Fonseca,Urbana,Divinópolis,vizinho
+312230605000101,Jusa Fonseca,Urbana,Divinópolis,CNEFE
+312230605000103,Terra Azul,Urbana,Divinópolis,CNEFE
+312230605000106,Nova Holanda,Urbana,Divinópolis,CNEFE
+312230605000107,Antonio Fonseca,Urbana,Divinópolis,CNEFE
+312230605000108,Nossa Senhora das Gracas,Urbana,Divinópolis,CNEFE
+312230605000109,Antonio Fonseca,Urbana,Divinópolis,CNEFE
+312230605000110,Porto Velho,Urbana,Divinópolis,vizinho
+312230605000112,Nossa Senhora das Gracas,Urbana,Divinópolis,vizinho
+312230605000113,Santa Tereza,Urbana,Divinópolis,CNEFE
+312230605000114,Nossa Senhora das Gracas,Urbana,Divinópolis,CNEFE
+312230605000115,Nossa Senhora das Gracas,Urbana,Divinópolis,CNEFE
+312230605000116,Catalao,Urbana,Divinópolis,CNEFE
+312230605000118,Catalao,Urbana,Divinópolis,CNEFE
+312230605000119,Catalao,Urbana,Divinópolis,CNEFE
+312230605000120,Sao Jose,Urbana,Divinópolis,CNEFE
+312230605000121,Sao Jose,Urbana,Divinópolis,CNEFE
+312230605000122,Sao Jose,Urbana,Divinópolis,CNEFE
+312230605000123,Bela Vista,Urbana,Divinópolis,CNEFE
+312230605000124,Bela Vista,Urbana,Divinópolis,CNEFE
+312230605000126,Belvedere,Urbana,Divinópolis,CNEFE
+312230605000127,Belvedere,Urbana,Divinópolis,CNEFE
+312230605000128,Chanadour,Urbana,Divinópolis,CNEFE
+312230605000129,Morada Nova,Urbana,Divinópolis,CNEFE
+312230605000133,Sao Judas,Urbana,Divinópolis,CNEFE
+312230605000134,Sao Judas,Urbana,Divinópolis,CNEFE
+312230605000135,Sao Jose,Urbana,Divinópolis,CNEFE
+312230605000136,Sao Jose,Urbana,Divinópolis,CNEFE
+312230605000137,Sao Jose,Urbana,Divinópolis,CNEFE
+312230605000138,Sao Jose,Urbana,Divinópolis,CNEFE
+312230605000139,Sao Jose,Urbana,Divinópolis,CNEFE
+312230605000141,Santa Luzia,Urbana,Divinópolis,CNEFE
+312230605000142,Planalto,Urbana,Divinópolis,CNEFE
+312230605000143,Planalto,Urbana,Divinópolis,CNEFE
+312230605000144,Tiete,Urbana,Divinópolis,CNEFE
+312230605000147,Sao Jose,Urbana,Divinópolis,CNEFE
+312230605000148,Sao Jose,Urbana,Divinópolis,CNEFE
+312230605000149,Tiete,Urbana,Divinópolis,CNEFE
+312230605000150,Tiete,Urbana,Divinópolis,CNEFE
+312230605000151,Orion,Urbana,Divinópolis,vizinho
+312230605000158,Ipiranga,Urbana,Divinópolis,CNEFE
+312230605000160,Afonso Pena,Urbana,Divinópolis,CNEFE
+312230605000163,Afonso Pena,Urbana,Divinópolis,CNEFE
+312230605000164,Sao Sebastiao,Urbana,Divinópolis,CNEFE
+312230605000165,Xavante,Urbana,Divinópolis,CNEFE
+312230605000166,Nova Fortaleza,Urbana,Divinópolis,CNEFE
+312230605000168,Serra Verde,Urbana,Divinópolis,CNEFE
+312230605000169,Serra Verde,Urbana,Divinópolis,CNEFE
+312230605000170,Nossa Senhora da Conceicao,Urbana,Divinópolis,CNEFE
+312230605000172,Candelaria,Urbana,Divinópolis,CNEFE
+312230605000178,Industrial,Urbana,Divinópolis,CNEFE
+312230605000180,Bom Pastor,Urbana,Divinópolis,CNEFE
+312230605000181,Alvorada,Urbana,Divinópolis,CNEFE
+312230605000182,Bom Pastor,Urbana,Divinópolis,CNEFE
+312230605000185,Icarai,Urbana,Divinópolis,CNEFE
+312230605000189,Maria Helena,Urbana,Divinópolis,CNEFE
+312230605000190,Mangabeiras,Urbana,Divinópolis,CNEFE
+312230605000194,Cacoco de Cima,Urbana,Divinópolis,CNEFE
+312230605000195,Sao Francisco,Urbana,Divinópolis,CNEFE
+312230605000196,Joao Antonio Goncalves,Urbana,Divinópolis,vizinho
+312230605000197,Joao Antonio Goncalves,Urbana,Divinópolis,vizinho
+312230605000200,Zona rural — Divinópolis,Rural,Divinópolis,distrito
+312230605000202,Zona rural — Divinópolis,Rural,Divinópolis,distrito
+312230605000204,Zona rural — Divinópolis,Rural,Divinópolis,distrito
+312230605000205,Zona rural — Divinópolis,Rural,Divinópolis,distrito
+312230605000206,Zona rural — Divinópolis,Rural,Divinópolis,distrito
+312230605000208,Centro,Urbana,Divinópolis,vizinho
+312230605000209,Centro,Urbana,Divinópolis,CNEFE
+312230605000210,Centro,Urbana,Divinópolis,vizinho
+312230605000211,Centro,Urbana,Divinópolis,CNEFE
+312230605000212,Centro,Urbana,Divinópolis,vizinho
+312230605000213,Santa Clara,Urbana,Divinópolis,vizinho
+312230605000214,Esplanada,Urbana,Divinópolis,vizinho
+312230605000215,Santa Luzia,Urbana,Divinópolis,vizinho
+312230605000216,Vila Santo Antonio,Urbana,Divinópolis,CNEFE
+312230605000217,Vila Santo Antonio,Urbana,Divinópolis,CNEFE
+312230605000219,Jardim Nova America,Urbana,Divinópolis,CNEFE
+312230605000220,Afonso Pena,Urbana,Divinópolis,CNEFE
+312230605000221,Santa Clara,Urbana,Divinópolis,CNEFE
+312230605000222,Esplanada,Urbana,Divinópolis,CNEFE
+312230605000223,Manoel Valinhas,Urbana,Divinópolis,CNEFE
+312230605000225,Espirito Santo,Urbana,Divinópolis,CNEFE
+312230605000226,Itai,Urbana,Divinópolis,CNEFE
+312230605000227,Sao Joao de Deus,Urbana,Divinópolis,CNEFE
+312230605000228,Porto Velho,Urbana,Divinópolis,vizinho
+312230605000229,Ponte Funda,Urbana,Divinópolis,CNEFE
+312230605000230,Sagrada Familia,Urbana,Divinópolis,CNEFE
+312230605000231,Vila das Roseiras,Urbana,Divinópolis,CNEFE
+312230605000233,Santa Rosa,Urbana,Divinópolis,CNEFE
+312230605000236,Nossa Senhora das Gracas,Urbana,Divinópolis,CNEFE
+312230605000237,Porto Velho,Urbana,Divinópolis,vizinho
+312230605000238,Nossa Senhora das Gracas,Urbana,Divinópolis,CNEFE
+312230605000239,Santa Tereza,Urbana,Divinópolis,CNEFE
+312230605000240,Nossa Senhora das Gracas,Urbana,Divinópolis,CNEFE
+312230605000241,Sao Jose,Urbana,Divinópolis,CNEFE
+312230605000242,Sao Jose,Urbana,Divinópolis,CNEFE
+312230605000243,Belvedere II,Urbana,Divinópolis,CNEFE
+312230605000245,Belvedere,Urbana,Divinópolis,CNEFE
+312230605000247,Sao Judas,Urbana,Divinópolis,CNEFE
+312230605000248,Sao Judas,Urbana,Divinópolis,CNEFE
+312230605000249,Sao Judas,Urbana,Divinópolis,CNEFE
+312230605000250,Sao Jose,Urbana,Divinópolis,CNEFE
+312230605000251,Sao Jose,Urbana,Divinópolis,CNEFE
+312230605000252,Sao Jose,Urbana,Divinópolis,CNEFE
+312230605000254,Sao Jose,Urbana,Divinópolis,CNEFE
+312230605000255,Tiete,Urbana,Divinópolis,CNEFE
+312230605000256,Orion,Urbana,Divinópolis,CNEFE
+312230605000257,Ipiranga,Urbana,Divinópolis,CNEFE
+312230605000258,Afonso Pena,Urbana,Divinópolis,CNEFE
+312230605000260,Serra Verde,Urbana,Divinópolis,CNEFE
+312230605000261,Nova Fortaleza,Urbana,Divinópolis,CNEFE
+312230605000262,Nossa Senhora da Conceicao,Urbana,Divinópolis,CNEFE
+312230605000263,Conjunto Habitacional Dom Cristiano,Urbana,Divinópolis,CNEFE
+312230605000264,Bom Pastor,Urbana,Divinópolis,CNEFE
+312230605000265,Bom Pastor,Urbana,Divinópolis,CNEFE
+312230605000266,Bom Pastor,Urbana,Divinópolis,CNEFE
+312230605000267,Residencial Sao Miguel,Urbana,Divinópolis,vizinho
+312230605000270,Maria Helena,Urbana,Divinópolis,CNEFE
+312230605000271,Mangabeiras,Urbana,Divinópolis,CNEFE
+312230605000275,Jardim Real,Urbana,Divinópolis,vizinho
+312230605000276,Jardim Real,Urbana,Divinópolis,vizinho
+312230605000277,Divinópolis — sem bairro declarado,Urbana,Divinópolis,distrito
+312230605000278,Zona rural — Divinópolis,Rural,Divinópolis,distrito
+312230605000279,Centro,Urbana,Divinópolis,vizinho
+312230605000280,Manoel Valinhas,Urbana,Divinópolis,vizinho
+312230605000281,Vila Santo Antonio,Urbana,Divinópolis,vizinho
+312230605000282,Sidil,Urbana,Divinópolis,vizinho
+312230605000283,Esplanada,Urbana,Divinópolis,CNEFE
+312230605000284,Esplanada,Urbana,Divinópolis,CNEFE
+312230605000286,Bom Pastor,Urbana,Divinópolis,vizinho
+312230605000287,Universitario,Urbana,Divinópolis,vizinho
+312230605000288,Manoel Valinhas,Urbana,Divinópolis,vizinho
+312230605000289,Sao Geraldo,Urbana,Divinópolis,CNEFE
+312230605000290,Universitario,Urbana,Divinópolis,CNEFE
+312230605000291,Del Rey,Urbana,Divinópolis,CNEFE
+312230605000293,Itai,Urbana,Divinópolis,CNEFE
+312230605000294,Sao Joao de Deus,Urbana,Divinópolis,CNEFE
+312230605000296,Nacoes,Urbana,Divinópolis,CNEFE
+312230605000297,Nacoes,Urbana,Divinópolis,CNEFE
+312230605000298,Sagrada Familia,Urbana,Divinópolis,CNEFE
+312230605000299,Sagrada Familia,Urbana,Divinópolis,CNEFE
+312230605000302,Davanuze,Urbana,Divinópolis,CNEFE
+312230605000303,Padre Eustaquio,Urbana,Divinópolis,CNEFE
+312230605000305,Dona Rosa,Urbana,Divinópolis,CNEFE
+312230605000306,Santa Rosa,Urbana,Divinópolis,CNEFE
+312230605000308,Dona Quita,Urbana,Divinópolis,CNEFE
+312230605000309,Santa Rosa,Urbana,Divinópolis,CNEFE
+312230605000310,Paraiso,Urbana,Divinópolis,CNEFE
+312230605000312,Sao Bento,Urbana,Divinópolis,CNEFE
+312230605000313,Jusa Fonseca,Urbana,Divinópolis,CNEFE
+312230605000317,Chacaras Campo Grande,Rural,Divinópolis,CNEFE
+312230605000322,Nova Holanda,Urbana,Divinópolis,CNEFE
+312230605000323,Dom Pedro II,Urbana,Divinópolis,CNEFE
+312230605000324,Sao Jose,Urbana,Divinópolis,CNEFE
+312230605000325,Jardim Belvedere II,Urbana,Divinópolis,CNEFE
+312230605000326,Bela Vista,Urbana,Divinópolis,CNEFE
+312230605000330,Morada Nova,Urbana,Divinópolis,CNEFE
+312230605000332,Tiete,Urbana,Divinópolis,CNEFE
+312230605000333,Orion,Urbana,Divinópolis,vizinho
+312230605000337,Orion,Urbana,Divinópolis,vizinho
+312230605000338,Residencial Doutor Walchir Resende Costa,Urbana,Divinópolis,CNEFE
+312230605000339,Jardim Brasilia,Urbana,Divinópolis,vizinho
+312230605000340,Liberdade,Urbana,Divinópolis,vizinho
+312230605000341,Sao Sebastiao,Urbana,Divinópolis,CNEFE
+312230605000343,Nova Fortaleza,Urbana,Divinópolis,vizinho
+312230605000348,Candelaria,Urbana,Divinópolis,CNEFE
+312230605000351,Industrial,Urbana,Divinópolis,CNEFE
+312230605000354,Residencial Sao Miguel,Urbana,Divinópolis,vizinho
+312230605000355,Icarai,Urbana,Divinópolis,CNEFE
+312230605000356,Jardim Floramar,Urbana,Divinópolis,CNEFE
+312230605000357,Centro Industrial,Urbana,Divinópolis,CNEFE
+312230605000362,Grajau,Urbana,Divinópolis,CNEFE
+312230605000366,Residencial Vesper,Urbana,Divinópolis,CNEFE
+312230605000370,Cacoco de Baixo,Urbana,Divinópolis,CNEFE
+312230605000372,Jatoba,Urbana,Divinópolis,CNEFE
+312230605000373,Inhame,Urbana,Divinópolis,CNEFE
+312230605000375,Cacoco de Cima,Urbana,Divinópolis,CNEFE
+312230605000376,Joao Antonio Goncalves,Urbana,Divinópolis,vizinho
+312230605000377,Jardim Real,Urbana,Divinópolis,vizinho
+312230605000378,Quintino,Urbana,Divinópolis,CNEFE
+312230605000382,Fabio Notini,Urbana,Divinópolis,CNEFE
+312230605000383,Divinópolis — sem bairro declarado,Urbana,Divinópolis,distrito
+312230605000384,Corrego do Paiol,Rural,Divinópolis,CNEFE
+312230605000385,Zona rural — Divinópolis,Rural,Divinópolis,distrito
+312230605000386,Manoel Valinhas,Urbana,Divinópolis,CNEFE
+312230605000387,Manoel Valinhas,Urbana,Divinópolis,CNEFE
+312230605000388,Santa Lucia,Urbana,Divinópolis,CNEFE
+312230605000391,Vila das Roseiras,Urbana,Divinópolis,CNEFE
+312230605000393,Santos Dumont,Urbana,Divinópolis,CNEFE
+312230605000394,Alvorada,Urbana,Divinópolis,CNEFE
+312230605000396,Liberdade,Urbana,Divinópolis,CNEFE
+312230605000397,Serra Verde,Urbana,Divinópolis,CNEFE
+312230605000398,Residencial Fonte Boa,Urbana,Divinópolis,CNEFE
+312230605000401,Mangabeiras,Urbana,Divinópolis,CNEFE
+312230605000402,Santo Andre,Urbana,Divinópolis,CNEFE
+312230605000403,Vivendas da Exposicao,Urbana,Divinópolis,CNEFE
+312230605000404,Itacolomi,Urbana,Divinópolis,CNEFE
+312230605000405,Realengo,Urbana,Divinópolis,CNEFE
+312230605000408,Geraldo Pereira,Urbana,Divinópolis,CNEFE
+312230605000409,Joao Paulo II,Urbana,Divinópolis,CNEFE
+312230605000410,Jardim Copacabana,Urbana,Divinópolis,CNEFE
+312230605000411,Jardim Copacabana,Urbana,Divinópolis,CNEFE
+312230605000415,Joao Antonio Goncalves,Urbana,Divinópolis,CNEFE
+312230605000418,Primavera,Urbana,Divinópolis,vizinho
+312230605000421,Anchieta,Urbana,Divinópolis,CNEFE
+312230605000422,Bom Pastor,Urbana,Divinópolis,CNEFE
+312230605000423,Bom Pastor,Urbana,Divinópolis,vizinho
+312230605000426,Bom Pastor,Urbana,Divinópolis,CNEFE
+312230605000428,Grajau,Urbana,Divinópolis,CNEFE
+312230605000429,Grajau,Urbana,Divinópolis,CNEFE
+312230605000430,Belvedere,Urbana,Divinópolis,CNEFE
+312230605000431,Sao Cristovao,Urbana,Divinópolis,CNEFE
+312230605000433,Vivendas da Exposicao,Urbana,Divinópolis,vizinho
+312230605000444,Porto Velho,Urbana,Divinópolis,CNEFE
+312230605000445,Terra Azul,Urbana,Divinópolis,CNEFE
+312230605000448,Fabio Notini,Urbana,Divinópolis,vizinho
+312230605000450,Vila Cruzeiro,Urbana,Divinópolis,CNEFE
+312230605000451,Vila Cruzeiro,Urbana,Divinópolis,CNEFE
+312230605000452,Manoel Valinhas,Urbana,Divinópolis,vizinho
+312230605000453,Manoel Valinhas,Urbana,Divinópolis,CNEFE
+312230605000454,Residencial Sao Miguel,Urbana,Divinópolis,vizinho
+312230605000455,Residencial Sao Miguel,Urbana,Divinópolis,vizinho
+312230605000456,Halim Souki,Urbana,Divinópolis,CNEFE
+312230605000457,Sao Lucas,Urbana,Divinópolis,CNEFE
+312230605000458,Porto Velho,Urbana,Divinópolis,vizinho
+312230605000461,Interlagos,Urbana,Divinópolis,CNEFE
+312230605000462,Ponte Funda,Urbana,Divinópolis,CNEFE
+312230605000463,Nacoes,Urbana,Divinópolis,CNEFE
+312230605000464,Davanuze,Urbana,Divinópolis,CNEFE
+312230605000465,Davanuze,Urbana,Divinópolis,CNEFE
+312230605000466,Santa Lucia,Urbana,Divinópolis,CNEFE
+312230605000467,Santa Lucia,Urbana,Divinópolis,CNEFE
+312230605000468,Davanuze,Urbana,Divinópolis,CNEFE
+312230605000469,Dona Rosa,Urbana,Divinópolis,CNEFE
+312230605000471,Jusa Fonseca,Urbana,Divinópolis,CNEFE
+312230605000472,Lavras,Urbana,Divinópolis,vizinho
+312230605000473,Lavras,Urbana,Divinópolis,vizinho
+312230605000474,Terra Azul,Urbana,Divinópolis,CNEFE
+312230605000475,Terra Azul,Urbana,Divinópolis,CNEFE
+312230605000476,Belvedere,Urbana,Divinópolis,CNEFE
+312230605000477,Belvedere,Urbana,Divinópolis,CNEFE
+312230605000478,Sao Judas,Urbana,Divinópolis,CNEFE
+312230605000479,Sao Judas,Urbana,Divinópolis,CNEFE
+312230605000480,Sao Jose,Urbana,Divinópolis,CNEFE
+312230605000481,Sao Judas,Urbana,Divinópolis,CNEFE
+312230605000482,Sao Jose,Urbana,Divinópolis,CNEFE
+312230605000483,Sao Judas,Urbana,Divinópolis,CNEFE
+312230605000484,Santa Luzia,Urbana,Divinópolis,CNEFE
+312230605000485,Planalto,Urbana,Divinópolis,CNEFE
+312230605000486,Orion,Urbana,Divinópolis,vizinho
+312230605000487,Orion,Urbana,Divinópolis,vizinho
+312230605000488,Anchieta,Urbana,Divinópolis,CNEFE
+312230605000489,Anchieta,Urbana,Divinópolis,CNEFE
+312230605000490,Bom Pastor,Urbana,Divinópolis,CNEFE
+312230605000491,Bom Pastor,Urbana,Divinópolis,CNEFE
+312230605000492,Icarai,Urbana,Divinópolis,CNEFE
+312230605000493,Icarai,Urbana,Divinópolis,CNEFE
+312230605000494,Centro Industrial,Urbana,Divinópolis,CNEFE
+312230605000496,Realengo,Urbana,Divinópolis,CNEFE
+312230605000497,Realengo,Urbana,Divinópolis,CNEFE
+312230605000498,Jardinopolis,Urbana,Divinópolis,CNEFE
+312230605000499,Jardinopolis,Urbana,Divinópolis,CNEFE
+312230605000500,Manoel Valinhas,Urbana,Divinópolis,CNEFE
+312230605000501,Manoel Valinhas,Urbana,Divinópolis,CNEFE
+312230605000502,Novo Paraiso,Urbana,Divinópolis,CNEFE
+312230605000503,Residencial Marisa Pardini,Urbana,Divinópolis,CNEFE
+312230605000504,Terra Azul,Urbana,Divinópolis,CNEFE
+312230605000506,Planalto,Urbana,Divinópolis,CNEFE
+312230605000507,Planalto,Urbana,Divinópolis,CNEFE
+312230605000508,Jardim Candides,Urbana,Divinópolis,CNEFE
+312230605000509,Jardim dos Candides,Urbana,Divinópolis,CNEFE
+312230605000510,Distrito Industrial,Urbana,Divinópolis,CNEFE
+312230605000511,Manoel Valinhas,Urbana,Divinópolis,CNEFE
+312230605000512,Manoel Valinhas,Urbana,Divinópolis,vizinho
+312230605000513,Elizabeth Nogueira,Urbana,Divinópolis,CNEFE
+312230605000514,Elizabeth Nogueira,Urbana,Divinópolis,CNEFE
+312230605000515,Chanadour,Urbana,Divinópolis,CNEFE
+312230605000516,Chanadour,Urbana,Divinópolis,CNEFE
+312230605000518,Chanadour,Urbana,Divinópolis,CNEFE
+312230605000519,Santa Luzia,Urbana,Divinópolis,CNEFE
+312230605000520,Santa Luzia,Urbana,Divinópolis,CNEFE
+312230605000522,Nova Fortaleza,Urbana,Divinópolis,vizinho
+312230605000523,Nova Fortaleza,Urbana,Divinópolis,vizinho
+312230605000524,Orion,Urbana,Divinópolis,vizinho
+312230605000525,Orion,Urbana,Divinópolis,vizinho
+312230605000526,Nova Fortaleza,Urbana,Divinópolis,CNEFE
+312230605000527,Nova Fortaleza,Urbana,Divinópolis,CNEFE
+312230605000528,Santa Marta,Urbana,Divinópolis,CNEFE
+312230605000529,Santa Marta,Urbana,Divinópolis,CNEFE
+312230605000532,Jardim Candides,Urbana,Divinópolis,CNEFE
+312230605000533,Jardim Candides,Urbana,Divinópolis,CNEFE
+312230605000534,Sao Cristovao,Urbana,Divinópolis,CNEFE
+312230605000535,Sao Cristovao,Urbana,Divinópolis,CNEFE
+312230605000537,Jardinopolis,Urbana,Divinópolis,CNEFE
+312230605000538,Joao Antonio Goncalves,Urbana,Divinópolis,vizinho
+312230605000539,Santa Luzia,Urbana,Divinópolis,vizinho
+312230605000540,Padre Eustaquio,Urbana,Divinópolis,CNEFE
+312230605000541,Padre Eustaquio,Urbana,Divinópolis,CNEFE
+312230605000542,Jardim dos Candides,Urbana,Divinópolis,CNEFE
+312230605000543,Jardim Candides,Urbana,Divinópolis,CNEFE
+312230605000544,Marajo,Urbana,Divinópolis,CNEFE
+312230605000548,Sao Simao,Urbana,Divinópolis,CNEFE
+312230605000550,Sao Simao,Urbana,Divinópolis,CNEFE
+312230605000551,Nova Fortaleza,Urbana,Divinópolis,CNEFE
+312230605000552,Nova Fortaleza,Urbana,Divinópolis,CNEFE
+312230605000553,Quinta das Palmeiras,Urbana,Divinópolis,CNEFE
+312230605000554,Quinta das Palmeiras,Urbana,Divinópolis,CNEFE
+312230605000555,Belvedere,Urbana,Divinópolis,CNEFE
+312230605000556,Belvedere,Urbana,Divinópolis,CNEFE
+312230605000557,Belvedere,Urbana,Divinópolis,CNEFE
+312230605000558,Belvedere,Urbana,Divinópolis,CNEFE
+312230605000559,Jardinopolis,Urbana,Divinópolis,CNEFE
+312230605000560,Jardinopolis,Urbana,Divinópolis,CNEFE
+312230605000561,Levindo de Paula Pereira,Urbana,Divinópolis,CNEFE
+312230605000562,Levindo de Paula Pereira,Urbana,Divinópolis,CNEFE
+312230605000563,Levindo de Paula Pereira,Urbana,Divinópolis,CNEFE
+312230605000564,Jardim Brasilia,Urbana,Divinópolis,CNEFE
+312230605000565,Zona rural — Divinópolis,Rural,Divinópolis,distrito
+312230605000566,Zona rural — Divinópolis,Rural,Divinópolis,distrito
+312230605000568,Zona rural — Divinópolis,Rural,Divinópolis,distrito
+312230605000571,Lavras,Rural,Divinópolis,CNEFE
+312230605000572,Cachoeira da Ponte de Ferro,Rural,Divinópolis,CNEFE
+312230605000573,Jatoba,Rural,Divinópolis,CNEFE
+312230605000574,Catalao,Urbana,Divinópolis,CNEFE
+312230605000575,Vila Joao Cota,Urbana,Divinópolis,CNEFE
+312230605000576,Niteroi,Urbana,Divinópolis,CNEFE
+312230605000577,Niteroi,Urbana,Divinópolis,CNEFE
+312230605000578,Afonso Pena,Urbana,Divinópolis,CNEFE
+312230605000579,Jardim America,Urbana,Divinópolis,CNEFE
+312230605000580,Jardim America,Urbana,Divinópolis,CNEFE
+312230605000581,Sao Sebastiao,Urbana,Divinópolis,CNEFE
+312230605000582,Bom Pastor,Urbana,Divinópolis,CNEFE
+312230605000583,Bom Pastor,Urbana,Divinópolis,vizinho
+312230605000584,Santa Lucia,Urbana,Divinópolis,CNEFE
+312230605000585,Santa Lucia,Urbana,Divinópolis,CNEFE
+312230605000586,Icarai,Urbana,Divinópolis,vizinho
+312230605000587,Residencial Sao Miguel,Urbana,Divinópolis,vizinho
+312230605000588,Icarai,Urbana,Divinópolis,CNEFE
+312230605000589,Icarai,Urbana,Divinópolis,CNEFE
+312230605000590,Sao Simao,Urbana,Divinópolis,CNEFE
+312230605000591,Sao Simao,Urbana,Divinópolis,CNEFE
+312230605000592,Zona rural — Divinópolis,Rural,Divinópolis,distrito
+312230605000593,Boa Vista,Rural,Divinópolis,CNEFE
+312230605000594,Zona rural — Divinópolis,Rural,Divinópolis,distrito
+312230605000595,Zona rural — Divinópolis,Rural,Divinópolis,distrito
+312230605000596,Zona rural — Divinópolis,Rural,Divinópolis,distrito
+312230605000597,Icarai,Urbana,Divinópolis,CNEFE
+312230605000598,Icarai,Urbana,Divinópolis,CNEFE
+312230605000599,Jardim das Acacias,Urbana,Divinópolis,CNEFE
+312230605000600,Padre Herculano Yanes,Urbana,Divinópolis,CNEFE
+312230605000601,Jardim das Acacias,Urbana,Divinópolis,CNEFE
+312230605000602,Jardim das Acacias,Urbana,Divinópolis,CNEFE
+312230605000603,Belvedere,Urbana,Divinópolis,CNEFE
+312230605000604,Belvedere,Urbana,Divinópolis,CNEFE
+312230605000605,Jardim Belvedere II,Urbana,Divinópolis,CNEFE
+312230605000606,Jardim Belvedere II,Urbana,Divinópolis,CNEFE
+312230605000607,Jardinopolis,Urbana,Divinópolis,CNEFE
+312230605000608,Jardinopolis,Urbana,Divinópolis,CNEFE
+312230605000609,Realengo,Urbana,Divinópolis,CNEFE
+312230605000610,Realengo,Urbana,Divinópolis,vizinho
+312230605000611,Nova Holanda,Urbana,Divinópolis,CNEFE
+312230605000612,Nova Holanda,Urbana,Divinópolis,CNEFE
+312230605000613,Paraiso,Urbana,Divinópolis,CNEFE
+312230605000614,Paraiso,Urbana,Divinópolis,CNEFE
+312230605000615,Santa Rosa,Urbana,Divinópolis,CNEFE
+312230605000616,Santa Rosa,Urbana,Divinópolis,CNEFE
+312230605000617,Dona Rosa,Urbana,Divinópolis,CNEFE
+312230605000618,Dona Rosa,Urbana,Divinópolis,CNEFE
+312230605000619,Santa Lucia,Urbana,Divinópolis,CNEFE
+312230605000620,Santa Lucia,Urbana,Divinópolis,CNEFE
+312230605000621,Vale do Sol,Urbana,Divinópolis,CNEFE
+312230605000622,Vale do Sol,Urbana,Divinópolis,CNEFE
+312230605000623,Chacaras Beira Rio,Urbana,Divinópolis,vizinho
+312230605000624,Residencial Sao Frei Galvao III,Urbana,Divinópolis,CNEFE
+312230605000625,Dona Quita,Urbana,Divinópolis,vizinho
+312230605000626,Interlagos,Urbana,Divinópolis,vizinho
+312230605000627,Candelaria,Urbana,Divinópolis,CNEFE
+312230605000628,Candelaria,Urbana,Divinópolis,CNEFE
+312230605000629,Candelaria,Urbana,Divinópolis,CNEFE
+312230605000630,Candelaria,Urbana,Divinópolis,CNEFE
+312230605000631,Prolongamento Bom Pastor,Urbana,Divinópolis,vizinho
+312230605000632,Prolongamento Bom Pastor,Urbana,Divinópolis,CNEFE
+312230605000633,Alvorada,Urbana,Divinópolis,CNEFE
+312230605000634,Alvorada,Urbana,Divinópolis,CNEFE
+312230605000635,Bom Pastor,Urbana,Divinópolis,CNEFE
+312230605000636,Bom Pastor,Urbana,Divinópolis,CNEFE
+312230605000637,Liberdade,Urbana,Divinópolis,CNEFE
+312230605000638,Liberdade,Urbana,Divinópolis,CNEFE
+312230605000639,Jardim Capitao Silva,Urbana,Divinópolis,CNEFE
+312230605000640,Jardim Capitao Silva,Urbana,Divinópolis,CNEFE
+312230605000641,Ipiranga,Urbana,Divinópolis,vizinho
+312230605000642,Ipiranga,Urbana,Divinópolis,vizinho
+312230605000643,Orion,Urbana,Divinópolis,vizinho
+312230605000644,Orion,Urbana,Divinópolis,vizinho
+312230605000645,Orion,Urbana,Divinópolis,CNEFE
+312230605000646,Ipiranga,Urbana,Divinópolis,CNEFE
+312230605000647,Planalto,Urbana,Divinópolis,CNEFE
+312230605000648,Planalto,Urbana,Divinópolis,CNEFE
+312230605000649,Santa Luzia,Urbana,Divinópolis,CNEFE
+312230605000650,Santa Luzia,Urbana,Divinópolis,CNEFE
+312230605000651,Santa Clara,Urbana,Divinópolis,CNEFE
+312230605000652,Santa Clara,Urbana,Divinópolis,CNEFE
+312230605000653,Fabio Notini,Urbana,Divinópolis,vizinho
+312230605000654,Fabio Notini,Urbana,Divinópolis,vizinho
+312230605000655,Fabio Notini,Urbana,Divinópolis,vizinho
+312230605000656,Fabio Notini,Urbana,Divinópolis,vizinho
+312230605000657,Santa Luzia,Urbana,Divinópolis,vizinho
+312230605000658,Santa Luzia,Urbana,Divinópolis,vizinho
+312230605000659,Marajo,Urbana,Divinópolis,CNEFE
+312230605000660,Marajo,Urbana,Divinópolis,CNEFE
+312230605000661,Joao Antonio Goncalves,Urbana,Divinópolis,vizinho
+312230605000662,Zona rural — Divinópolis,Rural,Divinópolis,distrito
+312230605000663,Joao Antonio Goncalves,Urbana,Divinópolis,vizinho
+312230605000664,Jardim Real,Rural,Divinópolis,CNEFE
+312230605000665,Santa Luzia,Urbana,Divinópolis,CNEFE
+312230605000666,Elizabeth Nogueira,Rural,Divinópolis,CNEFE
+312230605000667,Aeroporto,Urbana,Divinópolis,CNEFE
+312230605000668,Porto Velho,Urbana,Divinópolis,CNEFE
+312230605000669,Liberdade,Urbana,Divinópolis,CNEFE
+312230605000670,Cacoco de Cima,Urbana,Divinópolis,CNEFE
+312230605000671,Morro das Antenas,Urbana,Divinópolis,CNEFE
+312230605000672,Residencial Sao Miguel,Urbana,Divinópolis,CNEFE
+312230605000673,Centro Industrial,Urbana,Divinópolis,CNEFE
+312230605000674,Niteroi,Urbana,Divinópolis,vizinho
+312230605000675,Niteroi,Urbana,Divinópolis,vizinho
+312230605000676,Chacaras Beira Rio,Urbana,Divinópolis,CNEFE
+312230610000002,Santo Antonio dos Campos,Urbana,Santo Antônio dos Campos,CNEFE
+312230610000003,Centro,Urbana,Santo Antônio dos Campos,CNEFE
+312230610000004,Primavera,Urbana,Santo Antônio dos Campos,vizinho
+312230610000006,Lajes,Rural,Santo Antônio dos Campos,CNEFE
+312230610000007,Zona rural — Santo Antônio dos Campos,Rural,Santo Antônio dos Campos,distrito
+312230610000008,Serra das Perobas,Rural,Santo Antônio dos Campos,CNEFE
+312230610000009,Zona rural — Santo Antônio dos Campos,Rural,Santo Antônio dos Campos,distrito
+312230610000010,Djalma Dutra,Rural,Santo Antônio dos Campos,CNEFE
+312230610000012,Branquinhos,Rural,Santo Antônio dos Campos,CNEFE
+312230610000013,Santo Antonio dos Campos,Urbana,Santo Antônio dos Campos,CNEFE
+312230610000014,Santo Antonio dos Campos,Urbana,Santo Antônio dos Campos,CNEFE
+312230610000016,Tamboril,Rural,Santo Antônio dos Campos,CNEFE
+312230610000018,Santa Cruz,Urbana,Santo Antônio dos Campos,CNEFE
+312230610000019,Florermida,Urbana,Santo Antônio dos Campos,vizinho
+312230610000020,Santa Cruz,Urbana,Santo Antônio dos Campos,CNEFE
+312230610000021,Vista Alegre,Urbana,Santo Antônio dos Campos,CNEFE
+312230610000023,Lagoa,Rural,Santo Antônio dos Campos,CNEFE
+312230610000024,Lajes,Rural,Santo Antônio dos Campos,CNEFE
+312230610000025,Zona rural — Santo Antônio dos Campos,Rural,Santo Antônio dos Campos,distrito
+312230610000026,Santo Antonio dos Campos,Urbana,Santo Antônio dos Campos,CNEFE
+312230610000027,Primavera,Urbana,Santo Antônio dos Campos,CNEFE
+312230610000030,Tamboril,Rural,Santo Antônio dos Campos,CNEFE
+312230610000031,Primavera,Urbana,Santo Antônio dos Campos,CNEFE
+312230610000032,Florermida,Urbana,Santo Antônio dos Campos,CNEFE
+312230610000033,Florermida,Urbana,Santo Antônio dos Campos,vizinho
+312230610000034,Posses,Rural,Santo Antônio dos Campos,CNEFE
+312230610000035,Lava Pes,Rural,Santo Antônio dos Campos,CNEFE
+312230610000036,Primavera,Urbana,Santo Antônio dos Campos,vizinho
+312230610000037,Zona rural — Santo Antônio dos Campos,Rural,Santo Antônio dos Campos,distrito
+312230610000038,Primavera,Rural,Santo Antônio dos Campos,CNEFE
+312230610000039,Zona rural — Santo Antônio dos Campos,Rural,Santo Antônio dos Campos,distrito
+312230610000040,Branquinhos,Rural,Santo Antônio dos Campos,CNEFE
+312230610000041,Primavera,Urbana,Santo Antônio dos Campos,vizinho
+312230610000042,Primavera,Urbana,Santo Antônio dos Campos,vizinho

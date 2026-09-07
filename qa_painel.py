@@ -20,8 +20,13 @@ async def main(path):
         async def n(sel): return await pg.locator(sel).count()
         print("\n### ELEMENTOS RENDERIZADOS")
         for nome, sel in [("cards",".cards .card"),("insights","#insights .insight"),
-                          ("polígonos do mapa","#map svg path"),("círculos 2022","#mapV svg circle"),
-                          ("acordeão 2022",".vreg"),("linhas da tabela","#tb tbody tr"),
+                          ("polígonos do mapa","#map svg path"),
+                          ("polígonos da seção unificada","#mapCam svg path"),
+                          ("círculos 2022","#mapCam svg circle[data-l*='Lohanna']"),
+                          ("círculos 2024","#mapCam svg circle:not([data-l*='Lohanna'])"),
+                          ("botões de camada",".camctl .tgb"),
+                          ("linhas por bairro (2 camadas)",".crow2"),
+                          ("acordeão unificado",".vreg"),("linhas da tabela","#tb tbody tr"),
                           ("colunas Top10","#tops .topcol"),("frentes de mobilização",".front"),
                           ("bairros-alvo",".front .trow"),("gráficos (canvas)","canvas"),
                           ("mapa mobilização","#mapM svg path"),("competitiva",".crow"),
@@ -33,7 +38,7 @@ async def main(path):
             c = await n(sel); print(f"   {nome:26s} {c:5d}{'   <-- VAZIO' if c==0 else ''}")
 
         print("\n### TEXTO VISÍVEL — amostras")
-        for sel in ["#cards",".insight:first-child","#v24 .big","#foot"]:
+        for sel in ["#cards",".insight:first-child","#cam .big","#foot"]:
             t = (await pg.locator(sel).first.inner_text())[:300].replace("\n"," | ")
             print(f"   {sel}: {t}")
 
@@ -54,6 +59,32 @@ async def main(path):
         r1 = await pg.locator("#rkTitle").inner_text()
         print(f"   título antes : {t0}\n   título depois: {t1}\n   ranking      : {r1}")
         print(f"   cor do 1º polígono: {f0} -> {f1}   {'(mudou)' if f0!=f1 else '(igual — pode ser coincidência de faixa)'}")
+
+        print("\n### BOTÕES DE CÍRCULOS (liga/desliga por camada)")
+        for bid, rot in [("#tg22","Lohanna 2022"), ("#tg24","candidato 2024")]:
+            if not await pg.locator(bid).count():
+                print(f"   {rot:18s} ausente (camada não existe neste município)"); continue
+            sel = "#mapCam svg circle[data-l*='Lohanna']" if bid=="#tg22" \
+                  else "#mapCam svg circle:not([data-l*='Lohanna'])"
+            antes = await pg.locator(sel).count()
+            await pg.click(bid); await pg.wait_for_timeout(500)
+            desl = await pg.locator(sel).count()
+            await pg.click(bid); await pg.wait_for_timeout(500)
+            volta = await pg.locator(sel).count()
+            ok = antes > 0 and desl == 0 and volta == antes
+            print(f"   {rot:18s} {antes} -> {desl} -> {volta}   {'OK' if ok else '<-- FALHOU'}")
+
+        print("\n### ENQUADRAMENTO (município inteiro x mancha urbana)")
+        vb0 = await pg.locator("#map svg").first.get_attribute("viewBox")
+        d0 = await pg.locator("#map svg path").first.get_attribute("d")
+        await pg.select_option("#selEnq","urb"); await pg.wait_for_timeout(800)
+        d1 = await pg.locator("#map svg path").first.get_attribute("d")
+        n1 = await pg.locator("#map svg path").count()
+        await pg.select_option("#selEnq","mun"); await pg.wait_for_timeout(800)
+        n0 = await pg.locator("#map svg path").count()
+        print(f"   polígonos desenhados: município={n0} urbano={n1} "
+              f"{'OK (nenhum some)' if n0==n1 else '<-- POLÍGONO SUMIU'}")
+        print(f"   projeção mudou: {'sim' if d0!=d1 else 'NÃO — o recorte não teve efeito'}")
 
         print("\n### RESPONSIVO 900px / 380px")
         for w in (900, 380):

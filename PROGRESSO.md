@@ -1,5 +1,174 @@
 # PROGRESSO — Painéis de candidatos aliados
 
+Atualizado: 2026-09-07 (malha completa + seção unificada) · Branch `claude/electoral-panel-allied-candidates-wfput7`
+
+## Estado: CONCLUÍDO — 10 painéis, malha cobrindo o município inteiro, as duas eleições numa seção só
+
+> **Leia primeiro a seção "MALHA COMPLETA E SEÇÃO UNIFICADA" (2026-09-07, 2ª rodada do dia),**
+> logo abaixo. Ela substitui, onde divergir, tudo que vem depois.
+
+---
+
+## MALHA COMPLETA E SEÇÃO UNIFICADA (2026-09-07)
+
+Pedido do usuário, em quatro partes, todas atendidas:
+
+1. usar os shapes de **bairros e setores censitários de MG** da pasta do Drive;
+2. **unificar** as abas "Desempenho da Lohanna — Deputada · 2022" e "Desempenho
+   eleitoral — Vereador · 2024", organizando os votos **por bairro**, não por seção
+   eleitoral;
+3. um **botão** no mapa para ligar/desligar os círculos de votos por bairro também
+   para o candidato aliado quando disputou vereador em 2024;
+4. **garantir que todos os polígonos** dos mapas dos municípios apareçam.
+
+### 1. A malha passou a sair dos setores censitários — e cobre tudo
+
+O que estava errado: a malha vinha de `MG_bairros_CD2022`, e o IBGE só delimita
+bairros em municípios selecionados. Dos dez do projeto, **só quatro** estavam lá
+(Belo Horizonte, Betim, Uberlândia, São João del-Rei) — e mesmo nesses a malha
+deixava setores de fora. **Seis painéis não tinham mapa nenhum** (Conselheiro
+Lafaiete, Curvelo, Pará de Minas, Divinópolis, Lagoa Santa, Mariana) e São João
+del-Rei tinha 8 polígonos para a cidade inteira.
+
+O que passou a valer, em `preparar_malhas.py` (novo): a malha vem de
+**`MG_setores_CD2022`**, que cobre o território integral dos 5.570 municípios. Cada
+setor recebe um rótulo de bairro e os polígonos são dissolvidos por rótulo. A regra,
+nesta ordem, com a origem registrada setor a setor na coluna `fonte_nome`:
+
+| # | regra | de onde vem |
+|---|-------|-------------|
+| 1 | `NM_BAIRRO` do IBGE | nome oficial, quando existe |
+| 2 | `Bairro` da tabela de aderência | CNEFE, onde o IBGE não nomeia |
+| 3 | vizinho de maior fronteira | só para setor **urbano** que sobrou das duas |
+| 4 | `Zona rural — <distrito>` / `<distrito> — sem bairro declarado` | unidade oficial do IBGE |
+
+Onde as regras 1 e 2 coexistem elas **coincidem 100%** (verificado setor a setor nos
+quatro municípios com malha do IBGE), então a regra 1 só consolida, nunca conflita.
+
+A regra 3 foi necessária porque o CNEFE só nomeia os setores que entraram na tabela
+de aderência: faltavam **103 setores urbanos em Divinópolis, 78 em Lagoa Santa, 67 em
+Conselheiro Lafaiete**. Ela é propagação de rótulo sobre uma partição contígua — não
+inventa número nenhum, estende ao setor vazio o nome do bairro que o cerca — e vale
+só para setor urbano, porque no rural o vizinho pode estar a quilômetros.
+
+**Resultado, conferido geometricamente:** a união dos polígonos de cada município
+cobre **99,9%+ do contorno** nos dez casos (o resíduo é a simplificação
+Douglas-Peucker, aplicada de forma independente aos dois). Nenhum buraco.
+
+| município | polígonos (antes → depois) |
+|---|---|
+| Belo Horizonte | 476 → 476 |
+| Betim | 126 → 131 |
+| Uberlândia | 75 → 104 |
+| São João del-Rei | 8 → 35 |
+| Divinópolis | **0 → 141** |
+| Conselheiro Lafaiete | **0 → 70** |
+| Pará de Minas | **0 → 57** |
+| Mariana | **0 → 57** |
+| Lagoa Santa | **0 → 56** |
+| Curvelo | **0 → 51** |
+
+Efeito colateral valioso: com malha em todos, os locais de votação passaram a ser
+situados **por polígono** em vez de por centroide mais próximo. Em Mariana, 41 dos 43
+locais de 2022 e 39 dos 41 de 2024 caem literalmente dentro de um bairro.
+
+### 2. Dado e geometria amarrados pelo mesmo arquivo
+
+`preparar_malhas.py` grava também `dados/geo/setores_<mun>.csv` — `CD_SETOR → bairro`.
+`gerar_painel.py` lê **esse** arquivo para rotular o setor, em vez de derivar o bairro
+da planilha por conta própria. Antes, quando os dois caminhos discordavam (e discordavam
+justamente nos setores que o IBGE não nomeia), o bairro existia na tabela e não no mapa,
+ou o contrário. Agora a correspondência é exata por construção.
+
+O centroide de cada bairro também mudou de origem: sai do **maior polígono da malha**
+(fórmula da área com sinal), não mais da média das coordenadas dos setores pesquisados.
+Todo bairro desenhado tem onde pousar o círculo, e o ponto cai dentro da figura.
+
+### 3. As duas eleições viraram uma seção só, por bairro
+
+As duas abas antigas foram substituídas por **"Desempenho eleitoral por bairro —
+Lohanna · Deputada 2022 × <aliado> · Vereador 2024"**. A de 2024 listava local de
+votação por local de votação; agora as duas somam **por bairro**, com o local situado
+no bairro pela coordenada oficial do TSE. A seção traz:
+
+- cards com os totais dos dois anos, bairro líder de cada um e quantos bairros
+  receberam voto nas duas eleições;
+- **um mapa só**, com botões independentes de círculos por camada (item 3 do pedido)
+  e um seletor de qual camada pinta os polígonos;
+- acordeão por região com as **duas colunas lado a lado**, barra rosa para 2022 e
+  azul-marinho para 2024;
+- o ranking dos 15 vereadores mais votados do município;
+- o detalhe por local de votação recolhido num `<details>` — fica como rastro da
+  apuração, já que a unidade de leitura passou a ser o bairro.
+
+**Os números nunca são somados entre si:** 2022 foi Deputada Estadual e 2024 foi
+vereador, cargos e pleitos diferentes. Cada camada é escalada pelo próprio máximo,
+inclusive o raio dos círculos.
+
+Correção de rota importante encontrada no caminho: a primeira versão de `montar_camadas`
+partia só dos bairros da tabela de aderência e **perdia 109 dos 620 votos** do candidato
+em Mariana, que caíam num polígono sem nome. Com o universo passando a ser a união
+(tabela ∪ voto 2022 ∪ voto 2024) e com a regra 3 da malha, a cobertura foi a
+**615 de 620 em 2024 e 180 de 188 em 2022**. O que resta são locais sem coordenada na
+fonte do TSE, declarado no rodapé e **nunca rateado** entre bairros.
+
+### 4. Enquadramento: tudo desenhado, com opção de aproximar
+
+Cobrir o município inteiro alarga muito o quadro onde há distritos isolados (em
+Uberlândia, de 0,226° para 0,921° de longitude). Em vez de recortar a malha, o painel
+ganhou um seletor **"Enquadramento: município inteiro / mancha urbana principal"**, ao
+lado do seletor de pauta, valendo para todos os mapas. O padrão é **município inteiro**,
+que é o que o pedido exige; a mancha urbana usa o percentil 2–98 dos centroides
+ponderados por setor urbano. **Nos dois casos todos os polígonos são desenhados** — a
+QA verifica isso contando os `path` nas duas opções.
+
+### Arquivos
+
+| arquivo | o que mudou |
+|---|---|
+| `preparar_malhas.py` | **novo** — dissolve setores por bairro; gera geojson, contorno e o CSV de amarração |
+| `gerar_painel.py` | lê `setores_<mun>.csv`; centroide da malha; `montar_camadas`; regionais só quando repartem de fato; geojson com todo polígono e `votos24`/`urbano` |
+| `painel.js` | `cam()` no lugar de `v24()`+`v22()`; círculos em camadas; enquadramento; rodapé com a origem do nome de cada setor |
+| `template_painel.html` | seção `#pCam` unificada; seletor `#selEnq` |
+| `lib/painel.css` | botões de camada, grade de duas colunas por bairro, `<details>` do detalhe |
+| `qa_painel.py`, `qa_lote.py` | testam liga/desliga de cada camada, enquadramento sem perda de polígono, linhas das duas camadas |
+| `montar_painel.py` | passa `__APELIDO__` para o título da seção |
+
+### QA — os 10 painéis
+
+`python3 qa_lote.py`: **TODOS PASSARAM**. Zero erro de JavaScript, zero requisição
+externa, zero `NaN`/`undefined`/`Infinity`, sem estouro horizontal a 900px e 380px.
+Os botões de círculo somem e voltam sem levar a outra camada junto; o enquadramento
+reprojeta sem perder polígono. Betim (Gabriel Mendes) tem um botão só, porque ele não
+disputou 2024 — comportamento correto, não falha.
+
+### Reprodução
+
+```bash
+# shapes do Drive -> dados/geo/  (MG_bairros_CD2022.*, MG_setores_CD2022.*)
+gdown --folder "https://drive.google.com/drive/folders/106NdmnIxP6cVVpOG2XvT83e26gxqqhFa"
+python3 preparar_malhas.py      # ~27 s, os dez municípios
+./gerar_todos.sh                # ~42 s, DATA + HTML
+python3 qa_lote.py              # validação headless
+```
+
+Os shapefiles (252 MB) ficam fora do repositório; o que entra é o resultado
+(`bairros_*.geojson`, `contorno_*.geojson`, `setores_*.csv`), que soma poucos MB.
+
+### O que continua em aberto
+
+- **36 locais de votação de 2024 e 45 de 2022 sem coordenada** na fonte do TSE. Não são
+  rateados; a diferença entre o total do município e a soma dos bairros está declarada
+  em cada painel.
+- **Professor Gabriel Mendes** segue com painel de camada única (não disputou 2024) e só
+  para Betim, embora a planilha também o liste em Belo Horizonte.
+- Nomes vindos do CNEFE não têm acento ("Sao Goncalo"): é a grafia da fonte, e não foi
+  corrigida por palpite.
+
+---
+
+<details><summary>Histórico: Rota A e rodadas anteriores (2026-09-03 a 07)</summary>
+
 Atualizado: 2026-09-07 (Rota A executada) · Branch `claude/electoral-panel-allied-candidates-wfput7`
 
 ## Estado: CONCLUÍDO — 10 painéis entregues, com as duas camadas e a sobreposição
@@ -669,3 +838,5 @@ downloads. `dados/tse2024_locais/` tem 36 MB e ficou de fora.
    painel entregue é o de Betim. O de BH sai com um comando, se for o caso.
 4. **Ordem de leitura dos painéis** — a planilha sugere Gabriel Mendes primeiro; segue sem
    confirmação.
+
+</details>

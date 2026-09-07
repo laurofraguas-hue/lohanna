@@ -1,13 +1,20 @@
-# Shapefile extraído do zip — reproduzível com `unzip` a qualquer momento.
+# Shapefiles do IBGE (252 MB): a malha de setores de MG inteira. Baixados da pasta
+# do Drive do projeto e consumidos por `preparar_malhas.py`; o que entra no
+# repositório é o resultado (bairros_*.geojson, contorno_*.geojson, setores_*.csv),
+# que é pequeno e é o que os painéis usam.
 dados/geo/MG_bairros_CD2022.shp
 dados/geo/MG_bairros_CD2022.dbf
 dados/geo/MG_bairros_CD2022.shx
 dados/geo/MG_bairros_CD2022.prj
 dados/geo/MG_bairros_CD2022.cpg
+dados/geo/MG_setores_CD2022.*
 
 # Dados brutos do TSE: grandes demais para o repositório.
 dados/*.zip
 dados/*.csv
+# ...mas a geocodificação dos locais e a malha derivada são pequenas e entram.
+!dados/geo/locais_*.csv
+!dados/geo/setores_*.csv
 dados/tse2024_secao/
 dados/tse2022_secao/
 # Agregados por local de votação: reproduzíveis com agregar_2024.py / agregar_2022.py.
@@ -15,3 +22,4 @@ dados/tse2024_locais/
 dados_filtrados/
 dados/cand_b64.txt
 dados/bruto/
+__pycache__/

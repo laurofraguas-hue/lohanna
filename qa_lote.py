@@ -18,6 +18,26 @@ async def testa(pg, path):
     await pg.wait_for_timeout(700)
     t1 = await pg.locator("#mapTitle").inner_text()
     r1 = await pg.locator("#rkTitle").inner_text()
+    # botões de círculos: cada camada some e volta sem levar a outra junto
+    tg = True
+    for bid, sel in (("#tg22","#mapCam svg circle[data-l*='Lohanna']"),
+                     ("#tg24","#mapCam svg circle:not([data-l*='Lohanna'])")):
+        if not await pg.locator(bid).count():
+            continue
+        a = await pg.locator(sel).count()
+        await pg.click(bid); await pg.wait_for_timeout(350)
+        d = await pg.locator(sel).count()
+        await pg.click(bid); await pg.wait_for_timeout(350)
+        v = await pg.locator(sel).count()
+        tg = tg and a > 0 and d == 0 and v == a
+    # enquadramento: reprojeta sem perder polígono
+    n_mun = await pg.locator("#map svg path").count()
+    d0 = await pg.locator("#map svg path").first.get_attribute("d")
+    await pg.select_option("#selEnq","urb"); await pg.wait_for_timeout(600)
+    n_urb = await pg.locator("#map svg path").count()
+    d1 = await pg.locator("#map svg path").first.get_attribute("d")
+    await pg.select_option("#selEnq","mun"); await pg.wait_for_timeout(600)
+    enq = (n_mun == n_urb) and (d0 != d1)
     # responsivo
     resp = {}
     for w in (900, 380):
@@ -34,6 +54,11 @@ async def testa(pg, path):
         "over": await n(".scatter circle"),
         "mapaQ": await n("#mapQ svg path")+await n("#mapQ svg circle"),
         "recip": await n("#recip .trow"), "cbair": await n(".cbtab tbody tr"),
+        "camPol": await n("#mapCam svg path"),
+        "c22": await n("#mapCam svg circle[data-l*='Lohanna']"),
+        "c24": await n("#mapCam svg circle:not([data-l*='Lohanna'])"),
+        "bt": await n(".camctl .tgb"), "linhas2": await n(".crow2"),
+        "tg": tg, "enq": enq,
         "trocou": t0 != t1 and t1.split('—')[-1].strip() == r1.split('—')[-1].strip(),
         "resp": resp, "rodape": len(await pg.locator("#foot").inner_text()),
     }
@@ -42,8 +67,8 @@ async def main():
     ok = True
     async with async_playwright() as pw:
         b = await pw.chromium.launch(executable_path="/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args=["--no-sandbox"])
-        print(f"{'PAINEL':44s}{'ERR':>4s}{'NET':>4s}{'PROIB':>6s}{'CARD':>5s}{'INS':>4s}{'MAPA':>6s}{'ACORD':>6s}{'TAB':>5s}{'TOP':>4s}{'ALVO':>5s}{'CNV':>4s}{'MOB':>5s}{'OVER':>6s}{'MAPQ':>6s}{'RECP':>6s}{'CBAI':>6s}{'SEL':>5s}{'RESP':>6s}")
-        print("-"*154)
+        print(f"{'PAINEL':44s}{'ERR':>4s}{'NET':>4s}{'PROIB':>6s}{'CARD':>5s}{'INS':>4s}{'MAPA':>6s}{'ACORD':>6s}{'TAB':>5s}{'TOP':>4s}{'ALVO':>5s}{'CNV':>4s}{'MOB':>5s}{'OVER':>6s}{'MAPQ':>6s}{'RECP':>6s}{'CBAI':>6s}{'POL2':>6s}{'C22':>5s}{'C24':>5s}{'BT':>4s}{'BRR2':>6s}{'TGL':>5s}{'ENQ':>5s}{'SEL':>5s}{'RESP':>6s}")
+        print("-"*196)
         for p in sorted(glob.glob("/home/user/lohanna/paineis/*.html")):
             pg = await b.new_page(viewport={"width":1400,"height":1000})
             r = await testa(pg, p); await pg.close()
@@ -51,13 +76,17 @@ async def main():
             resp_ok = all(r["resp"][w] <= w+2 for w in r["resp"])
             falhou = (r["erros"] or r["req"] or prob or not r["trocou"] or not resp_ok
                       or r["cards"]==0 or r["mapa"]==0 or r["tabela"]==0 or r["tops"]==0
-                      or r["canvas"]==0 or r["rodape"]<200)
+                      or r["canvas"]==0 or r["rodape"]<200
+                      or r["camPol"]==0 or r["linhas2"]==0 or r["bt"]==0
+                      or not r["tg"] or not r["enq"])
             ok = ok and not falhou
             nome = os.path.basename(p).replace("Painel_","").replace(".html","")
             print(f"{nome[:44]:44s}{len(r['erros']):>4d}{len(r['req']):>4d}{prob:>6d}"
                   f"{r['cards']:>5d}{r['insights']:>4d}{r['mapa']:>6d}{r['acordeao']:>6d}"
                   f"{r['tabela']:>5d}{r['tops']:>4d}{r['alvos']:>5d}{r['canvas']:>4d}"
                   f"{r['mapaMob']:>5d}{r['over']:>6d}{r['mapaQ']:>6d}{r['recip']:>6d}{r['cbair']:>6d}"
+                  f"{r['camPol']:>6d}{r['c22']:>5d}{r['c24']:>5d}{r['bt']:>4d}{r['linhas2']:>6d}"
+                  f"{'ok' if r['tg'] else 'FALHA':>5s}{'ok' if r['enq'] else 'FALHA':>5s}"
                   f"{'ok' if r['trocou'] else 'FALHA':>5s}{'ok' if resp_ok else 'FALHA':>6s}"
                   + ("   <-- REVISAR" if falhou else ""))
             if r["erros"]: print("        erro:", r["erros"][0][:150])

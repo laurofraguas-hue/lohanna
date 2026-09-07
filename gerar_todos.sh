@@ -6,7 +6,7 @@
 #   python3 filtrar_bruto.py --ano 2024 && python3 filtrar_bruto.py --ano 2022
 #   python3 geo_locais.py --ano 2024   && python3 geo_locais.py --ano 2022
 #   python3 agregar_2024.py            && python3 agregar_2022.py
-#   python3 preparar_geo.py
+#   python3 preparar_malhas.py   (malha de bairros dos 10, a partir dos setores)
 set -e
 cd "$(dirname "$0")"
 

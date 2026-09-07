@@ -162,3 +162,52 @@ footer{text-align:center;font-size:.75rem;color:var(--muted);padding:18px;line-h
 .cbtab tr.win td{background:#fdf3f8;}
 .cbtab .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
 @media(max-width:900px){.quads,#recip .lists{grid-template-columns:1fr;}}
+
+/* ---- seção unificada: as duas eleições por bairro ---- */
+.xis{color:var(--muted);font-weight:400;margin:0 3px;}
+.camctl{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:12px 0 10px;
+  padding:10px 12px;background:#f7f8fc;border:1.5px solid #e3e6f0;border-radius:10px;}
+.camctl .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+  font-weight:700;margin-right:2px;}
+.tgb{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font:inherit;font-size:.78rem;
+  font-weight:600;color:var(--muted);background:#fff;border:1.5px solid #dfe3ee;border-radius:20px;
+  padding:5px 13px;transition:all .15s;}
+.tgb:hover{border-color:#b9c0d6;}
+.tgb i{width:11px;height:11px;border-radius:50%;background:currentColor;opacity:.28;
+  border:1.5px solid currentColor;box-sizing:border-box;transition:opacity .15s;}
+.tgb.on{background:var(--tgc);border-color:var(--tgc);color:#fff;}
+.tgb.on i{opacity:1;background:#fff;border-color:#fff;}
+.tgb.off{text-decoration:line-through;text-decoration-thickness:1px;}
+.camctl select{font:inherit;font-size:.78rem;padding:4px 8px;border:1.5px solid #dfe3ee;
+  border-radius:7px;background:#fff;color:var(--navy);}
+.camctl label{font-size:.78rem;color:var(--navy);font-weight:600;}
+.cambar{display:flex;gap:3px;align-items:center;}
+.cambar i{height:7px;border-radius:3px;display:inline-block;min-width:1px;}
+.cambar .b22{background:var(--pink);} .cambar .b24{background:var(--navy);}
+.crow2{display:grid;grid-template-columns:22px 1fr 92px 92px;gap:8px;align-items:center;
+  padding:5px 10px;font-size:.78rem;border-bottom:1px solid #f4f5f9;}
+.crow2:hover{background:#f7f8fc;}
+.crow2 .n{color:var(--muted);font-size:.68rem;}
+.crow2 .b{font-weight:600;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.crow2 .cel{display:flex;flex-direction:column;gap:2px;}
+.crow2 .cel .q{font-variant-numeric:tabular-nums;font-weight:700;font-size:.76rem;}
+.crow2 .q22{color:var(--pink);} .crow2 .q24{color:var(--navy);}
+.crow2 .zero{color:#b6bccd;font-weight:400;}
+.camhead{display:grid;grid-template-columns:22px 1fr 92px 92px;gap:8px;padding:6px 10px;
+  font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);
+  font-weight:700;background:#f4f5f9;border-bottom:1.5px solid #e3e6f0;position:sticky;top:0;z-index:1;}
+.camdet{margin-top:14px;border:1.5px solid #e3e6f0;border-radius:10px;background:#fff;}
+.camdet>summary{cursor:pointer;padding:10px 14px;font-size:.8rem;font-weight:700;color:var(--navy);
+  list-style:none;}
+.camdet>summary::-webkit-details-marker{display:none;}
+.camdet>summary::before{content:'▸ ';color:var(--muted);}
+.camdet[open]>summary::before{content:'▾ ';}
+.camdet .in{padding:0 12px 12px;}
+@media(max-width:900px){
+  .crow2,.camhead{grid-template-columns:20px 1fr 76px 76px;}
+  .camctl{gap:8px;}
+}
+@media(max-width:520px){
+  .crow2,.camhead{grid-template-columns:1fr 68px 68px;}
+  .crow2 .n,.camhead .n{display:none;}
+}

@@ -21,7 +21,7 @@ import math
 import os
 import re
 import unicodedata
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 import pandas as pd
 
@@ -95,6 +95,24 @@ def carregar_geo(mun_slug):
         if os.path.exists(p):
             return json.load(open(p, encoding="utf-8")), p
     return None, None
+
+
+def carregar_setores_bairro(mun_slug):
+    """CD_SETOR -> bairro, na mesma grafia dos polígonos (ver `preparar_malhas.py`).
+
+    É este arquivo que amarra dado e geometria. Antes o painel derivava o bairro
+    da planilha (`Bairro_Censo`, com `Bairro` de reserva) e a malha vinha do IBGE
+    por outro caminho: quando os dois discordavam — e discordavam justamente nos
+    setores que o IBGE não nomeia — o bairro existia na tabela e não no mapa, ou
+    o contrário. Lendo o mesmo CSV que gerou os polígonos, a correspondência
+    passa a ser exata por construção."""
+    for cand in (mun_slug, mun_slug.replace("del_rey", "del_rei")):
+        p = f"dados/geo/setores_{cand}.csv"
+        if os.path.exists(p):
+            d = pd.read_csv(p, dtype=str)
+            return (d.set_index("CD_SETOR")["bairro"].to_dict(),
+                    d["fonte_nome"].value_counts().to_dict(), p)
+    return None, None, None
 
 
 # --------------------------------------------- locais de votação (geo)
@@ -342,6 +360,100 @@ def agregar_por_bairro(df, bairro_de, reg_por_bairro, numero):
     return agg, comp
 
 
+# ------------------------------------------------- camadas unificadas
+
+def montar_camadas(bairros, reg_por_bairro, votes22, votes24, por_bairro22, npb,
+                   xy, apelido):
+    """Funde as duas eleições numa única tabela por bairro.
+
+    As duas camadas moravam em seções separadas e em unidades diferentes: 2022
+    saía por região/bairro e 2024 por local de votação. Como o local já é situado
+    no bairro pela coordenada do TSE, dá para levar as duas ao mesmo denominador
+    — o bairro — e compará-las linha a linha. É isso que esta função monta.
+
+    O universo de bairros é a UNIÃO dos três: os que a tabela de aderência mede,
+    os que receberam voto em 2022 e os que receberam voto em 2024. Partir só da
+    tabela deixaria de fora o bairro que tem urna e não tem setor pesquisado — em
+    Mariana isso escondia 109 dos 620 votos do candidato.
+
+    Nada é rateado: o voto de 2024 de um bairro é a soma dos locais atribuídos a
+    ele, e o de 2022 idem. Local sem coordenada não entra em nenhum dos dois, e a
+    diferença entre o total do município e a soma dos bairros fica registrada."""
+    tem24 = bool(npb)
+    supr22 = bool(votes22.get("suprimido"))
+
+    meta_b = {r["Bairro"]: r for _, r in bairros.iterrows()}
+    universo = set(meta_b) | set(por_bairro22 or {}) | set(npb or {})
+    universo.discard("Não classificado")
+
+    linhas = []
+    for b in sorted(universo):
+        d = (npb or {}).get(b, {})
+        r = meta_b.get(b)
+        v22 = None if supr22 else int((por_bairro22 or {}).get(b, 0))
+        v24 = int(d.get("cand") or 0) if tem24 else None
+        tot24 = int(d.get("tot") or 0) if tem24 else None
+        linhas.append({
+            "b": b,
+            "reg": reg_por_bairro.get(b) or (r["regional"] if r is not None
+                                             else "Não classificado"),
+            "v22": v22, "v24": v24, "tot24": tot24,
+            "locais24": int(d.get("locais") or 0) if tem24 else None,
+            "pct24": (round(100 * v24 / tot24, 2) if tem24 and tot24 else None),
+            "pos24": d.get("pos") if tem24 else None,
+            "n24": d.get("n") if tem24 else None,
+            # Bairro que só aparece pela urna não tem setor pesquisado: 0 é o
+            # número correto, e é o que o painel mostra para não sugerir amostra.
+            "setores": int(r["setores"]) if r is not None else 0,
+            "lat": round(xy[b][1], 5) if b in xy else None,
+            "lon": round(xy[b][0], 5) if b in xy else None,
+        })
+
+    soma22 = sum(x["v22"] or 0 for x in linhas)
+    soma24 = sum(x["v24"] or 0 for x in linhas)
+    # Percentual dentro de cada camada: quanto daquela votação o bairro concentra.
+    for x in linhas:
+        x["sh22"] = round(100 * x["v22"] / soma22, 2) if soma22 and x["v22"] else None
+        x["sh24"] = round(100 * x["v24"] / soma24, 2) if soma24 and x["v24"] else None
+
+    por_reg = defaultdict(lambda: {"v22": 0, "v24": 0, "bairros": []})
+    for x in linhas:
+        g = por_reg[x["reg"]]
+        g["v22"] += x["v22"] or 0
+        g["v24"] += x["v24"] or 0
+        g["bairros"].append(x)
+    regionais = []
+    for reg, g in por_reg.items():
+        bs = sorted(g["bairros"], key=lambda x: -((x["v24"] or 0) if tem24 else (x["v22"] or 0)))
+        regionais.append({"regional": reg, "v22": g["v22"], "v24": g["v24"],
+                          "n": len(bs), "bairros": bs})
+    regionais.sort(key=lambda r: -(r["v24"] if tem24 else r["v22"]))
+
+    def circulos(chave):
+        return [[x["lat"], x["lon"], x[chave], x["b"], x["reg"]]
+                for x in linhas
+                if x["lat"] is not None and (x[chave] or 0) > 0]
+
+    return {
+        "tem22": not supr22, "tem24": tem24,
+        "cargo22": votes22.get("cargo") or "Deputada Estadual",
+        "apelido": apelido,
+        "total22": votes22.get("total"), "soma22": soma22,
+        "total24": (votes24 or {}).get("candidato", {}).get("votos"),
+        "soma24": soma24 if tem24 else None,
+        "nominal24": (votes24 or {}).get("total_nominal"),
+        "max22": max([x["v22"] or 0 for x in linhas], default=0),
+        "max24": max([x["v24"] or 0 for x in linhas], default=0),
+        "n_bairros": len(linhas),
+        "n_com22": sum(1 for x in linhas if (x["v22"] or 0) > 0),
+        "n_com24": sum(1 for x in linhas if (x["v24"] or 0) > 0),
+        "bairros": linhas,
+        "regionais": regionais,
+        "circ22": circulos("v22") if not supr22 else [],
+        "circ24": circulos("v24") if tem24 else [],
+    }
+
+
 # ---------------------------------------------------- sobreposição
 
 def spearman(a, b):
@@ -439,6 +551,47 @@ def regioes_oficiais(geo):
         return {}
     return {f["properties"]["bairro"]: f["properties"].get("regiao")
             for f in geo["features"] if f["properties"].get("regiao")}
+
+
+def _centroide_anel(anel):
+    """Centroide de um anel fechado pela fórmula da área com sinal."""
+    a = cx = cy = 0.0
+    n = len(anel)
+    for i in range(n):
+        x0, y0 = anel[i][0], anel[i][1]
+        x1, y1 = anel[(i + 1) % n][0], anel[(i + 1) % n][1]
+        f = x0 * y1 - x1 * y0
+        a += f
+        cx += (x0 + x1) * f
+        cy += (y0 + y1) * f
+    if abs(a) < 1e-12:                      # anel degenerado: média simples
+        return (sum(p[0] for p in anel) / n, sum(p[1] for p in anel) / n, 0.0)
+    a *= 0.5
+    return (cx / (6 * a), cy / (6 * a), abs(a))
+
+
+def centroides_da_malha(geo):
+    """bairro -> (lon, lat), pelo maior polígono de cada bairro.
+
+    O centroide vinha da média das coordenadas dos setores da tabela de aderência,
+    que só cobre parte dos setores — e nenhum bairro que a tabela não pesquisou.
+    Tirando-o da própria malha, todo bairro desenhado tem onde pousar o círculo de
+    votos, e o ponto cai no polígono em vez de na média da amostra."""
+    out = {}
+    for f in (geo or {}).get("features", []):
+        g = f["geometry"]
+        aneis = ([g["coordinates"][0]] if g["type"] == "Polygon"
+                 else [p[0] for p in g["coordinates"]])
+        melhor, area_max = None, -1.0
+        for anel in aneis:
+            if len(anel) < 3:
+                continue
+            cx, cy, a = _centroide_anel(anel)
+            if a > area_max:
+                melhor, area_max = (cx, cy), a
+        if melhor:
+            out[f["properties"]["bairro"]] = melhor
+    return out
 
 
 def carregar_locais22(mun_slug):
@@ -566,6 +719,7 @@ def construir(mun_nome, apelido, numero=None, min_setores=None, suprimir22=None,
     mun_slug = slug(mun_nome)
     df, p_ader = carregar_aderencia(mun_slug)
     geo, p_geo = carregar_geo(mun_slug)
+    setor_bairro, fontes_nome, p_setores = carregar_setores_bairro(mun_slug)
     tse, p_tse = carregar_tse24(mun_nome)
 
     base = indice_por_setor(df)
@@ -578,36 +732,57 @@ def construir(mun_nome, apelido, numero=None, min_setores=None, suprimir22=None,
                                             "Longitude_Setor", "Votos_Candidato"]])
     tab = met.join(setor_info, how="left")
 
-    # Bairro_Censo casa com a malha do IBGE; Bairro (bruto) é o recurso onde
-    # não há malha. Setor sem nenhum dos dois vai para "Não classificado".
-    usa_censo = geo is not None and tab["Bairro_Censo"].notna().any() \
-        and (tab["Bairro_Censo"].map(norm) != "—").any()
-    col_b = "Bairro_Censo" if usa_censo else "Bairro"
-    tab["_bairro"] = tab[col_b].fillna("—").astype(str).str.strip()
+    # O bairro do setor vem do mesmo CSV que gerou os polígonos. Só quando ele
+    # falta é que se recorre à planilha (Bairro_Censo, e Bairro de reserva), com
+    # o risco conhecido de o nome da tabela não existir no mapa.
+    if setor_bairro:
+        tab["_bairro"] = tab.index.map(lambda cd: setor_bairro.get(str(cd)))
+        falta = tab["_bairro"].isna()
+        if falta.any():
+            reserva = tab["Bairro_Censo"].where(
+                tab["Bairro_Censo"].map(norm).ne("—"), tab["Bairro"])
+            tab.loc[falta, "_bairro"] = reserva[falta]
+    else:
+        usa_censo = geo is not None and tab["Bairro_Censo"].notna().any() \
+            and (tab["Bairro_Censo"].map(norm) != "—").any()
+        col_b = "Bairro_Censo" if usa_censo else "Bairro"
+        tab["_bairro"] = tab[col_b]
+    tab["_bairro"] = tab["_bairro"].fillna("—").astype(str).str.strip()
     tab.loc[tab["_bairro"].map(norm).isin(["—", "", "NAN"]), "_bairro"] = "Não classificado"
     tab["_votos22"] = pd.to_numeric(tab["Votos_Candidato"], errors="coerce").fillna(0).astype(int)
 
     # ---- centroide de cada bairro e regiões ----------------------------
-    xy = {}
+    # A malha manda: é dela que sai o polígono desenhado, então é dela que sai o
+    # ponto. A média dos setores da tabela só entra onde a malha não tem o bairro.
+    xy = dict(centroides_da_malha(geo))
     for b, sub in tab.groupby("_bairro"):
+        if b in xy:
+            continue
         la = pd.to_numeric(sub["Latitude_Setor"], errors="coerce").dropna()
         lo = pd.to_numeric(sub["Longitude_Setor"], errors="coerce").dropna()
         if len(la) and len(lo):
             xy[b] = (float(lo.mean()), float(la.mean()))
     # §6, ordem de preferência: regionais oficiais primeiro; clusters cardeais só
-    # quando o IBGE não publica subdivisão para o município.
-    reg_por_bairro, origem_reg = regioes_oficiais(geo), "oficial"
-    if len(set(reg_por_bairro.values())) < 2:
+    # quando o IBGE não publica subdivisão útil para o município.
+    oficiais = regioes_oficiais(geo)
+    reg_por_bairro, origem_reg = {}, "cluster"
+    if oficiais:
+        mapa = {norm(k): v for k, v in oficiais.items()}
+        cand_reg = {b: mapa.get(norm(b)) for b in xy if b != "Não classificado"}
+        cand_reg = {k: v for k, v in cand_reg.items() if v}
+        contagem = Counter(cand_reg.values())
+        # Só serve como regional o que de fato reparte o município. Onde o IBGE
+        # publica um distrito-sede que engole quase tudo (Divinópolis: 514 setores
+        # contra 34; Conselheiro Lafaiete: 230 contra 4), a "regional oficial"
+        # seria uma etiqueta única disfarçada de recorte — e o painel volta aos
+        # quadrantes cardeais, que ao menos separam o território.
+        util = (len(contagem) >= 3
+                and contagem.most_common(1)[0][1] <= 0.80 * sum(contagem.values())
+                and len(cand_reg) >= 0.5 * len([b for b in xy if b != "Não classificado"]))
+        if util:
+            reg_por_bairro, origem_reg = cand_reg, "oficial"
+    if origem_reg == "cluster":
         reg_por_bairro = clusterizar({k: v for k, v in xy.items() if k != "Não classificado"})
-        origem_reg = "cluster"
-    else:
-        # A malha nomeia os bairros; a tabela usa Bairro_Censo. A junção é por nome normalizado.
-        mapa = {norm(k): v for k, v in reg_por_bairro.items()}
-        reg_por_bairro = {b: mapa.get(norm(b)) for b in xy}
-        reg_por_bairro = {k: v for k, v in reg_por_bairro.items() if v}
-        if len(reg_por_bairro) < 0.5 * len(xy):
-            reg_por_bairro = clusterizar({k: v for k, v in xy.items() if k != "Não classificado"})
-            origem_reg = "cluster"
     tab["_reg"] = tab["_bairro"].map(reg_por_bairro).fillna("Não classificado")
 
     # ---- agregação por bairro e por região -----------------------------
@@ -632,7 +807,7 @@ def construir(mun_nome, apelido, numero=None, min_setores=None, suprimir22=None,
     # A camada vem, portanto, do próprio TSE — mesma unidade da camada de 2024.
     loc22, p_loc22 = carregar_locais22(mun_slug)
     geoloc22, p_geoloc22 = carregar_geo_locais(mun_nome, 2022)
-    v22_locais, geo22 = [], None
+    v22_locais, geo22, por_bairro22 = [], None, {}
     if loc22 is not None and geoloc22 is not None:
         b22, m22 = atribuir_bairro_aos_locais(geoloc22, geo, xy)
         gi = geoloc22.drop_duplicates("_k").set_index("_k")
@@ -717,6 +892,7 @@ def construir(mun_nome, apelido, numero=None, min_setores=None, suprimir22=None,
 
     # ---- camada 2024 -----------------------------------------------------
     votes24, over, comp_bairro, geo_stats = None, None, None, None
+    npb = {}
     loc24, p_loc24 = carregar_locais24(mun_slug)
     geoloc, p_geoloc = carregar_geo_locais(mun_nome)
     bairro_de, metodo = ({}, {})
@@ -787,6 +963,10 @@ def construir(mun_nome, apelido, numero=None, min_setores=None, suprimir22=None,
             "n_zonas": int(tse["QT_ZONAS_COM_VOTO"].max()),
         }
 
+    # ---- as duas camadas na mesma unidade -------------------------------
+    camadas = montar_camadas(bairros, reg_por_bairro, votes22, votes24,
+                             por_bairro22, npb, xy, apelido)
+
     # ---- filtro de robustez, calibrado ao município ----------------------
     # O corte de 5 setores do painel de BH pressupõe bairros grandes. Onde o IBGE
     # não delimita bairros, a unidade vem do campo de endereço e a mediana cai para
@@ -811,9 +991,14 @@ def construir(mun_nome, apelido, numero=None, min_setores=None, suprimir22=None,
                     "reg": r["regional"]} for _, r in s.iterrows()]
 
     # ---- geojson com as métricas nas properties --------------------------
+    # Todo polígono da malha entra, inclusive o que não tem linha na tabela de
+    # aderência: sem isso o mapa abriria buraco justamente no rural e nos bairros
+    # que a pesquisa não alcançou, e o município apareceria menor do que é. Quem
+    # não tem dado vai com as métricas em null e é pintado de cinza pelo painel.
     gj = None
     if geo is not None:
         idx = bairros.set_index(bairros["Bairro"].map(norm))
+        v24_por_bairro = {norm(x["b"]): x for x in camadas["bairros"]}
         feats = []
         for i, f in enumerate(geo["features"]):
             nb = norm(f["properties"]["bairro"])
@@ -824,7 +1009,7 @@ def construir(mun_nome, apelido, numero=None, min_setores=None, suprimir22=None,
                     r = r.iloc[0]
                 for k in mk:
                     props[k] = None if pd.isna(r[k]) else float(r[k])
-                props["votos22"] = int(r["votos22"])
+                props["votos22"] = int(r["votos22"]) if pd.notna(r["votos22"]) else None
                 props["setores"] = int(r["setores"])
                 props["regional"] = r["regional"]
             else:
@@ -832,7 +1017,12 @@ def construir(mun_nome, apelido, numero=None, min_setores=None, suprimir22=None,
                     props[k] = None
                 props["votos22"] = None
                 props["setores"] = 0
-                props["regional"] = None
+                props["regional"] = f["properties"].get("regiao")
+            c = v24_por_bairro.get(nb)
+            props["votos24"] = (c or {}).get("v24")
+            # `urbano` = nº de setores urbanos do bairro; o painel usa para
+            # enquadrar o mapa na mancha urbana sem deixar de desenhar o rural.
+            props["urbano"] = f["properties"].get("urbano")
             feats.append({"id": str(i), "type": "Feature", "properties": props,
                           "geometry": f["geometry"]})
         gj = {"type": "FeatureCollection", "features": feats}
@@ -902,17 +1092,31 @@ def construir(mun_nome, apelido, numero=None, min_setores=None, suprimir22=None,
         "gerado_em": pd.Timestamp.now().strftime("%d/%m/%Y"),
         "unidade": ("bairros do IBGE (Censo 2022)" if geo is not None
                     else "bairros declarados na base CNEFE, sem malha oficial"),
+        "malha_origem": ("setores censitários do Censo 2022 dissolvidos por bairro"
+                         if p_setores else "malha de bairros do IBGE"),
+        # Quantos setores tiveram o nome de bairro vindo de cada regra. É o que
+        # permite ao rodapé declarar o quanto da malha é nome oficial e o quanto
+        # foi herdado do vizinho, em vez de o leitor ter de confiar.
+        "malha_fontes": fontes_nome,
+        "malha_poligonos": len(geo["features"]) if geo else 0,
         "regioes_origem": origem_reg,
         "regioes_por_que": ("regionais oficiais publicadas pelo IBGE (distrito/subdistrito)"
                             if origem_reg == "oficial" else
                             "o IBGE não subdivide este município, então os bairros foram "
                             "agrupados em Centro, Norte, Sul, Leste e Oeste pela posição "
                             "relativa ao centroide da cidade"),
-        "unidade_por_que": ("A malha de bairros do IBGE cobre este município, e a coluna "
-                            "Bairro_Censo casa com ela." if geo is not None else
-                            "O IBGE não delimita bairros neste município; a unidade vem do "
-                            "campo Bairro da base de endereços, posicionado pelo centroide "
-                            "dos seus setores."),
+        "unidade_por_que": (
+            "A malha sai dos setores censitários do Censo 2022, dissolvidos por "
+            "bairro: o nome vem do campo NM_BAIRRO do IBGE onde ele existe e do "
+            "campo Bairro do CNEFE onde não existe. Todo setor do município entra "
+            "em algum polígono, e o mesmo arquivo que gerou a geometria dá o "
+            "bairro de cada setor na tabela — por isso mapa e dado não divergem."
+            if p_setores else
+            "A malha de bairros do IBGE cobre este município, e a coluna "
+            "Bairro_Censo casa com ela." if geo is not None else
+            "O IBGE não delimita bairros neste município; a unidade vem do "
+            "campo Bairro da base de endereços, posicionado pelo centroide "
+            "dos seus setores."),
         "setores_declarados": dec, "setores_observados": obs,
         "cobertura": round(100 * obs / dec, 1) if dec else None,
         "min_setores": int(min_setores),
@@ -926,8 +1130,9 @@ def construir(mun_nome, apelido, numero=None, min_setores=None, suprimir22=None,
                     f"da Lohanna França (2022), IBGE Censo 2022 + CNEFE",
             "2024": (f"{os.path.basename(p_tse)} — TSE, eleições municipais de 2024"
                      if p_tse else None),
-            "geo": (f"{os.path.basename(p_geo)} — malha de bairros IBGE Censo 2022 "
-                    f"(SIRGAS 2000)" if p_geo else None),
+            "geo": (f"{os.path.basename(p_geo)} — setores censitários do IBGE "
+                    f"(Censo 2022, SIRGAS 2000) dissolvidos por bairro"
+                    if p_geo else None),
         },
     }
 
@@ -949,6 +1154,7 @@ def construir(mun_nome, apelido, numero=None, min_setores=None, suprimir22=None,
                     for _, r in tab.iterrows()
                     if pd.notna(r["Latitude_Setor"]) and pd.notna(r["Longitude_Setor"])],
         "tops": tops, "votes22": votes22, "votes24": votes24,
+        "camadas": camadas,
         "over": over, "comp_bairro": comp_bairro,
         "quebras": quebras, "mob": mob, "meta": meta,
     }

@@ -1,0 +1,146 @@
+CD_SETOR,bairro,situacao,distrito,fonte_nome
+314000105000001,Centro,Urbana,Mariana,CNEFE
+314000105000002,Centro,Urbana,Mariana,CNEFE
+314000105000003,Sao Goncalo,Urbana,Mariana,CNEFE
+314000105000004,Rosario,Urbana,Mariana,CNEFE
+314000105000005,Centro,Urbana,Mariana,CNEFE
+314000105000006,Santana,Urbana,Mariana,CNEFE
+314000105000007,Sao Sebastiao,Urbana,Mariana,CNEFE
+314000105000008,Centro,Urbana,Mariana,CNEFE
+314000105000009,Centro,Urbana,Mariana,CNEFE
+314000105000010,Centro,Urbana,Mariana,CNEFE
+314000105000011,Sao Goncalo,Urbana,Mariana,CNEFE
+314000105000012,Rosario,Urbana,Mariana,vizinho
+314000105000013,Rosario,Urbana,Mariana,vizinho
+314000105000014,Barro Preto,Urbana,Mariana,CNEFE
+314000105000015,Nossa Senhora Aparecida,Urbana,Mariana,vizinho
+314000105000016,Vila Del Rei,Urbana,Mariana,vizinho
+314000105000017,Cruzeiro do Sul,Urbana,Mariana,vizinho
+314000105000018,Vila do Carmo,Urbana,Mariana,CNEFE
+314000105000019,Vila do Carmo,Urbana,Mariana,CNEFE
+314000105000020,Rosario,Urbana,Mariana,CNEFE
+314000105000021,Rosario,Urbana,Mariana,vizinho
+314000105000022,Sao Cristovao,Urbana,Mariana,vizinho
+314000105000023,Sao Sebastiao,Urbana,Mariana,vizinho
+314000105000024,Pico da Cartuxa,Urbana,Mariana,vizinho
+314000105000025,Cabanas,Urbana,Mariana,CNEFE
+314000105000026,Rosario,Urbana,Mariana,CNEFE
+314000105000027,Jardim dos Inconfidentes,Urbana,Mariana,CNEFE
+314000105000028,Jardim Santana,Urbana,Mariana,CNEFE
+314000105000029,Sao Cristovao,Urbana,Mariana,CNEFE
+314000105000030,Cabanas,Urbana,Mariana,CNEFE
+314000105000031,Cartuxa,Urbana,Mariana,CNEFE
+314000105000032,Cabanas,Urbana,Mariana,CNEFE
+314000105000033,Cabanas,Urbana,Mariana,CNEFE
+314000105000034,Cabanas,Urbana,Mariana,CNEFE
+314000105000035,Santa Rita de Cassia,Urbana,Mariana,vizinho
+314000105000036,Vila Maquine,Urbana,Mariana,CNEFE
+314000105000040,Zona rural — Mariana,Rural,Mariana,distrito
+314000105000041,Centro,Urbana,Mariana,CNEFE
+314000105000042,Centro,Urbana,Mariana,vizinho
+314000105000043,Sao Sebastiao,Urbana,Mariana,CNEFE
+314000105000044,Cruzeiro do Sul,Urbana,Mariana,CNEFE
+314000105000045,Sao Goncalo,Urbana,Mariana,CNEFE
+314000105000046,Rosario,Urbana,Mariana,vizinho
+314000105000047,Barro Preto,Urbana,Mariana,vizinho
+314000105000049,Rosario,Urbana,Mariana,vizinho
+314000105000050,Rosario,Urbana,Mariana,vizinho
+314000105000051,Jardim Santana,Urbana,Mariana,vizinho
+314000105000052,Vale Verde,Urbana,Mariana,CNEFE
+314000105000054,Sao Cristovao,Urbana,Mariana,CNEFE
+314000105000055,Passagem de Mariana,Urbana,Mariana,vizinho
+314000105000056,Vale Verde,Urbana,Mariana,vizinho
+314000105000057,Cabanas,Urbana,Mariana,CNEFE
+314000105000058,Cabanas,Urbana,Mariana,vizinho
+314000105000059,Pico da Cartuxa,Urbana,Mariana,vizinho
+314000105000060,Barro Preto,Urbana,Mariana,CNEFE
+314000105000061,Galego,Urbana,Mariana,CNEFE
+314000105000062,Nossa Senhora Aparecida,Urbana,Mariana,CNEFE
+314000105000063,Nossa Senhora Aparecida,Urbana,Mariana,vizinho
+314000105000064,Sao Pedro,Urbana,Mariana,CNEFE
+314000105000065,Sao Pedro,Urbana,Mariana,vizinho
+314000105000066,Sao Pedro,Urbana,Mariana,CNEFE
+314000105000067,Nossa Senhora Aparecida,Urbana,Mariana,vizinho
+314000105000068,Pico da Cartuxa,Urbana,Mariana,vizinho
+314000105000069,Sao Jose,Urbana,Mariana,CNEFE
+314000105000073,Cabanas,Urbana,Mariana,CNEFE
+314000105000074,Santa Rita de Cassia,Urbana,Mariana,CNEFE
+314000105000076,Cabanas,Urbana,Mariana,CNEFE
+314000105000078,Morro Santana,Urbana,Mariana,CNEFE
+314000105000079,Vila Del Rei,Urbana,Mariana,CNEFE
+314000105000082,Aglomerado Morada do Sol,Urbana,Mariana,vizinho
+314000105000083,Rosario,Urbana,Mariana,CNEFE
+314000105000085,Morada do Sol,Urbana,Mariana,CNEFE
+314000105000088,Santa Rita de Cassia,Urbana,Mariana,vizinho
+314000105000089,Alvorada,Rural,Mariana,CNEFE
+314000105000091,Passagem de Mariana,Urbana,Mariana,vizinho
+314000105000092,Alvorada,Urbana,Mariana,vizinho
+314000105000093,Jardim Santana,Urbana,Mariana,CNEFE
+314000105000095,Rosario,Urbana,Mariana,CNEFE
+314000105000096,Morada do Sol,Urbana,Mariana,CNEFE
+314000105000097,Aglomerado Morada do Sol,Urbana,Mariana,CNEFE
+314000105000098,Aglomerado Morada do Sol,Urbana,Mariana,CNEFE
+314000105000099,Aglomerado Morada do Sol,Urbana,Mariana,CNEFE
+314000105000100,Novo Horizonte,Urbana,Mariana,CNEFE
+314000105000101,Aglomerado Morada do Sol,Urbana,Mariana,vizinho
+314000105000102,Aglomerado Morada do Sol,Urbana,Mariana,CNEFE
+314000105000103,Santa Clara,Urbana,Mariana,vizinho
+314000105000104,Santa Clara,Urbana,Mariana,CNEFE
+314000105000105,Passagem de Mariana,Urbana,Mariana,vizinho
+314000105000106,Santa Clara,Urbana,Mariana,vizinho
+314000105000107,Passagem de Mariana,Urbana,Mariana,vizinho
+314000105000108,Passagem de Mariana,Urbana,Mariana,vizinho
+314000105000109,Pico da Cartuxa,Rural,Mariana,CNEFE
+314000110000001,Bandeirantes,Urbana,Bandeirantes,CNEFE
+314000110000002,Bandeirantes,Rural,Bandeirantes,CNEFE
+314000110000003,Bandeirantes,Urbana,Bandeirantes,CNEFE
+314000115000001,Cachoeira do Brumado,Urbana,Cachoeira do Brumado,CNEFE
+314000115000004,Cachoeira do Brumado,Urbana,Cachoeira do Brumado,CNEFE
+314000115000005,Barroca,Rural,Cachoeira do Brumado,CNEFE
+314000115000006,Bela Ville,Urbana,Cachoeira do Brumado,CNEFE
+314000115000007,Barroca,Rural,Cachoeira do Brumado,CNEFE
+314000115000008,Cafundao de Baixo,Rural,Cachoeira do Brumado,CNEFE
+314000115000009,Sitio Vargem do Engenho,Rural,Cachoeira do Brumado,CNEFE
+314000115000010,Zona rural — Cachoeira do Brumado,Rural,Cachoeira do Brumado,distrito
+314000115000011,Mundinho,Rural,Cachoeira do Brumado,CNEFE
+314000115000012,Cachoeira do Brumado,Urbana,Cachoeira do Brumado,CNEFE
+314000120000001,Camargos,Urbana,Camargos,vizinho
+314000120000002,Camargos,Rural,Camargos,CNEFE
+314000125000001,Fazenda Sao Jose,Urbana,Cláudio Manuel,vizinho
+314000125000003,Aguas Claras,Rural,Cláudio Manuel,CNEFE
+314000125000004,Prata,Rural,Cláudio Manuel,CNEFE
+314000125000005,Fazenda Sao Jose,Rural,Cláudio Manuel,CNEFE
+314000125000006,Campinas,Rural,Cláudio Manuel,CNEFE
+314000130000006,Zona rural — Furquim,Rural,Furquim,distrito
+314000130000007,Zona rural — Furquim,Rural,Furquim,distrito
+314000130000008,Goiabeiras,Rural,Furquim,CNEFE
+314000130000009,Zona rural — Furquim,Rural,Furquim,distrito
+314000130000010,Zona rural — Furquim,Rural,Furquim,distrito
+314000130000011,Zona rural — Furquim,Rural,Furquim,distrito
+314000130000012,Goiabeiras,Urbana,Furquim,vizinho
+314000135000001,Monsenhor Horta,Urbana,Monsenhor Horta,CNEFE
+314000135000003,Monsenhor Horta,Urbana,Monsenhor Horta,CNEFE
+314000135000006,Paracatu de Baixo,Rural,Monsenhor Horta,CNEFE
+314000135000008,Comunidade Quilombola Embaubas Vila Santa Efigenia,Rural,Monsenhor Horta,CNEFE
+314000135000010,Zona rural — Monsenhor Horta,Rural,Monsenhor Horta,distrito
+314000135000011,Monsenhor Horta,Rural,Monsenhor Horta,CNEFE
+314000140000001,Padre Viegas — sem bairro declarado,Urbana,Padre Viegas,distrito
+314000140000002,Zona rural — Padre Viegas,Rural,Padre Viegas,distrito
+314000140000003,Barro Branco,Rural,Padre Viegas,CNEFE
+314000140000004,Zona rural — Padre Viegas,Rural,Padre Viegas,distrito
+314000140000005,Zona rural — Padre Viegas,Rural,Padre Viegas,distrito
+314000140000008,Zona rural — Padre Viegas,Rural,Padre Viegas,distrito
+314000145000001,Passagem de Mariana,Urbana,Passagem de Mariana,CNEFE
+314000145000002,Passagem de Mariana,Urbana,Passagem de Mariana,CNEFE
+314000145000003,Passagem de Mariana,Urbana,Passagem de Mariana,CNEFE
+314000145000007,Passagem de Mariana,Urbana,Passagem de Mariana,CNEFE
+314000145000008,Passagem de Mariana,Urbana,Passagem de Mariana,CNEFE
+314000145000009,Liberdade,Urbana,Passagem de Mariana,CNEFE
+314000145000010,Campo Grande Vila Rica,Urbana,Passagem de Mariana,CNEFE
+314000145000011,Passagem de Mariana,Urbana,Passagem de Mariana,CNEFE
+314000145000012,Passagem de Mariana,Rural,Passagem de Mariana,CNEFE
+314000150000001,Santa Rita Durao,Urbana,Santa Rita Durão,CNEFE
+314000150000002,Santa Rita Durao,Rural,Santa Rita Durão,CNEFE
+314000150000003,Zona rural — Santa Rita Durão,Rural,Santa Rita Durão,distrito
+314000150000004,Zona rural — Santa Rita Durão,Rural,Santa Rita Durão,distrito
+314000150000005,Santa Rita do Durao,Urbana,Santa Rita Durão,CNEFE

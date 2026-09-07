@@ -38,6 +38,7 @@ out = (tpl
    .replace("__TAG__", f"{ape} · {mun} · {a.cargo} 2026")
    .replace("__SUB__", sub)
    .replace("__MINSET__", str(D["meta"]["min_setores"]))
+   .replace("__APELIDO__", ape)
    .replace("<!--CHARTJS-->", "<script>" + chart + "</script>")
    .replace("__CSS_BASE__", css)
    .replace("__DATA__", json.dumps(D, ensure_ascii=False, separators=(",", ":"), allow_nan=False))

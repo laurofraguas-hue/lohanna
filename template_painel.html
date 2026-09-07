@@ -51,6 +51,11 @@ __CSS_BASE__
   <select id="selMetric"></select>
   <span class="toggle"><input type="checkbox" id="showPts">
     <label for="showPts" style="font-weight:400;color:var(--muted)">Mostrar setores (pontos)</label></span>
+  <label for="selEnq">Enquadramento:</label>
+  <select id="selEnq">
+    <option value="mun">município inteiro</option>
+    <option value="urb">mancha urbana principal</option>
+  </select>
 </div>
 
 <div class="grid2">
@@ -59,21 +64,10 @@ __CSS_BASE__
   <div class="panel"><h2 id="rkTitle">Ranking</h2><div class="body" style="height:520px"><canvas id="chReg"></canvas></div></div>
 </div>
 
-<div class="panel" style="margin-bottom:16px;" id="pV24">
-  <h2>Desempenho eleitoral — <span class="yr y24">Vereador · 2024</span></h2>
-  <div class="body" id="v24"></div>
-</div>
-
-<div class="panel" style="margin-bottom:16px;">
-  <h2>Desempenho da Lohanna — <span class="yr y22">Deputada · 2022</span> · por região e bairro</h2>
-  <div class="body">
-    <div style="margin-bottom:10px;"><label style="font-size:.83rem;color:var(--navy);font-weight:600;cursor:pointer;">
-      <input type="checkbox" id="tgCirc" checked> Mostrar círculos de votos por bairro</label></div>
-    <div class="grid2" style="margin-bottom:0;">
-      <div><div id="mapV"></div></div>
-      <div id="vAccord" style="max-height:520px;overflow:auto;"></div>
-    </div>
-  </div>
+<div class="panel" style="margin-bottom:16px;" id="pCam">
+  <h2>Desempenho eleitoral por bairro — <span class="yr y22">Lohanna · Deputada 2022</span>
+      <span class="xis">×</span> <span class="yr y24">__APELIDO__ · Vereador 2024</span></h2>
+  <div class="body" id="cam"></div>
 </div>
 
 <div class="panel" style="margin-bottom:16px;" id="pOver">
