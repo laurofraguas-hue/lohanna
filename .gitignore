@@ -8,5 +8,6 @@ dados/geo/MG_bairros_CD2022.cpg
 # Dados brutos do TSE: grandes demais para o repositório.
 dados/*.zip
 dados/*.csv
+dados/tse2024_secao/
 dados_filtrados/
 dados/cand_b64.txt

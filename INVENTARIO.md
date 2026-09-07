@@ -671,3 +671,83 @@ círculos em `votes.circ` — mais uma confirmação de que o caminho é o mesmo
 A densidade é boa: com 439 locais para 476 bairros em BH, ou 66 para 8 em São João
 del-Rei, o ponto-em-polígono resolve a atribuição de local para bairro sem ambiguidade
 relevante. Nos municípios sem malha, os locais viram os próprios pontos do mapa.
+
+---
+
+# ADENDO 5 — A limitação de tamanho está superada
+
+Pasta `1FISQcKWYCmA3N96Z96iZJgvKU6xtpsrb`: **37 arquivos CSV, ~294 MB**, todos ≤ 9,5 MB.
+
+| Município | Partes | Tamanho |
+|---|---:|---:|
+| Belo Horizonte | 19 | 171,9 MB |
+| Uberlândia | 6 | 55,2 MB |
+| Betim | 3 | 22,9 MB |
+| Divinópolis | 2 | 13,8 MB |
+| Conselheiro Lafaiete | 1 | 8,9 MB |
+| Pará de Minas | 1 | 5,9 MB |
+| São João del-Rei | 1 | 5,5 MB |
+| Curvelo | 1 | 4,6 MB |
+| Lagoa Santa | 1 | 4,2 MB |
+| Mariana | 1 | 3,3 MB |
+
+## E.1 O achado que muda o quadro
+
+Eu vinha afirmando que o conector do Drive é inviável para arquivos grandes porque
+devolve o conteúdo em base64 **dentro do meu contexto**. Isso estava incompleto.
+
+Quando o resultado excede o limite, **o harness o grava em disco e me devolve apenas o
+caminho**. O primeiro teste (arquivo de 947 KB → 1,26 M de caracteres em base64) custou
+cerca de **200 tokens**, não os ~360 mil que a conta ingênua previa:
+
+```
+Error: result (1,263,789 characters) exceeds maximum allowed tokens.
+Output has been saved to .../tool-results/mcp-Google_Drive-download_file_content-....txt
+```
+
+Decodificado, o arquivo é o CSV íntegro: 947.744 bytes, 3.134 linhas, cabeçalho correto.
+
+**Consequência:** os 294 MB são alcançáveis por cerca de 9 mil tokens no total — três
+ordens de grandeza abaixo da estimativa anterior. `colher.py` faz a decodificação em lote.
+
+Correção honesta do que eu disse antes: o teto de 10 MB por arquivo do conector é real
+e continua valendo, e foi por isso que a divisão em partes foi necessária. O que eu errei
+foi supor que o conteúdo baixado passaria pelo contexto — para arquivos grandes, não passa.
+
+## E.2 Os arquivos são por seção, com a quebra geográfica
+
+26 colunas, incluindo o que faltava: `NR_ZONA`, `NR_SECAO`, **`NR_LOCAL_VOTACAO`**,
+`NM_LOCAL_VOTACAO` e `DS_LOCAL_VOTACAO_ENDERECO`, além de `DS_CARGO`, `NR_VOTAVEL`,
+`NM_VOTAVEL`, `SQ_CANDIDATO` e `QT_VOTOS`.
+
+**Validação em São João del-Rei:** somando as seções, Sinara Campos dá **2.355 votos, em
+197 seções e 54 locais** — idêntico ao total municipal do arquivo anterior. A agregação
+seção → local está correta e sem dupla contagem.
+
+## E.3 O que já dá para fazer, e o que ainda falta
+
+Destravado agora:
+- votos de 2024 **por local de votação**, para o candidato e para todos os concorrentes;
+- **inteligência competitiva por local** — quem vence em cada urna onde o aliado é forte;
+- votos por **zona eleitoral**.
+
+Ainda bloqueado: o **mapa de 2024 por bairro**, e portanto a **seção 7 (Sobreposição)** e a
+frente de **Reciprocidade**. Falta a coordenada de cada local de votação.
+
+Testei geocodificar pelo endereço em texto, casando `DS_LOCAL_VOTACAO_ENDERECO` contra a
+base CNEFE das tabelas de aderência: **11% de casamento exato e 18% por similaridade** em
+São João del-Rei. A tabela traz um endereço por setor (146 ruas para 66 locais) — base
+esparsa demais. Não é confiável e não será usado.
+
+**Solução:** `eleitorado_local_votacao_2024.zip` (43 MB) tem `NR_LATITUDE`, `NR_LONGITUDE`
+e `NM_BAIRRO` por local — exatamente o que falta, sem casamento aproximado. Dividido em
+~5 partes de 9 MB, como foi feito com os votos, resolve.
+
+## E.4 Fricção operacional
+
+O conector **expira a sessão após cada download grande**: em lotes paralelos, só o primeiro
+passa. Na prática é um arquivo por vez, com reconexão entre eles. Funciona, mas é lento
+para 37 arquivos.
+
+Liberar a rede para `drive.google.com` (Rota A do `PROGRESSO.md`) elimina a fricção: um
+`gdown --folder` baixa tudo de uma vez.
