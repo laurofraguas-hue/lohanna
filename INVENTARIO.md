@@ -751,3 +751,80 @@ para 37 arquivos.
 
 Liberar a rede para `drive.google.com` (Rota A do `PROGRESSO.md`) elimina a fricção: um
 `gdown --folder` baixa tudo de uma vez.
+
+---
+
+# ADENDO 6 — O teto real do conector é ~6 MB, não 10 MB
+
+Baixando os 37 arquivos, apareceu um limite abaixo do nominal. Medido por tentativa:
+
+| Passaram | Falharam |
+|---|---|
+| 0,95 MB · BH parte 19 | 7,71 MB · Uberlândia parte 6 |
+| 3,31 MB · Mariana | 8,91 MB · Conselheiro Lafaiete |
+| 3,88 MB · Betim parte 3 | 9,50 MB · Divinópolis parte 1 |
+| 4,16 MB · Lagoa Santa | |
+| 4,29 MB · Divinópolis parte 2 | |
+| 4,61 MB · Curvelo | |
+| 5,47 MB · São João del-Rei | |
+| 5,88 MB · Pará de Minas | |
+
+**A fronteira está entre 5,88 MB (passa) e 7,71 MB (falha).** Acima disso o conector
+responde `MCP server "Google_Drive" session expired`, e o erro é reprodutível: os mesmos
+arquivos falharam em todas as tentativas, com esperas de 80 s entre elas, enquanto
+arquivos menores passaram no intervalo.
+
+O teto de 10 MB que o próprio conector anuncia (`over limit of 10 MB`) é o limite
+declarado; o efetivo, para transferência, é mais baixo. **Limite seguro: 6 MB por arquivo.**
+
+Outra observação operacional: cada download bem-sucedido derruba a sessão, que leva
+cerca de um a dois minutos para voltar. Downloads em paralelo não funcionam — só o
+primeiro de cada lote passa.
+
+## F.1 O que já está em casa
+
+8 arquivos, 32,6 MB. **Cinco municípios completos** — e são justamente os cinco que
+antes não tinham camada de 2024 nenhuma:
+
+| Município | Locais | Candidatos | Votos a vereador |
+|---|---:|---:|---:|
+| São João del-Rei | 66 | 197 | 47.424 |
+| Pará de Minas | 45 | 224 | 44.917 |
+| Curvelo | 41 | 204 | 40.662 |
+| Mariana | 41 | 155 | 37.562 |
+| Lagoa Santa | 31 | 214 | 36.540 |
+
+Incompletos: Belo Horizonte (1 de 19), Uberlândia (0 de 6), Betim (1 de 3),
+Divinópolis (1 de 2), Conselheiro Lafaiete (0 de 1).
+
+## F.2 Os aliados dos cinco municípios completos
+
+Todos do **PV (43)**, como os demais da chapa:
+
+| Município | Candidato | Nº | Votos 2024 | Posição |
+|---|---|---|---:|---|
+| Lagoa Santa | Marcelo Silva Monteiro | 43000 | 1.156 | 6º de 214 |
+| Curvelo | Douglas Veríssimo Gonçalves | 43050 | 1.058 | 7º de 204 |
+| Mariana | Pedro Henrique da Paixão Sousa | 43444 | 620 | 25º de 155 |
+| Pará de Minas | Irene Susana da Silva Melo França | 43222 | 619 | 21º de 224 |
+| São João del-Rei | Sinara Rafaela Campos | 43123 | 2.355 | **1º de 197** |
+
+Em Mariana havia ambiguidade — PEDRO ULISSES COIMBRA VIEIRA (nº 45600, 2º lugar) também
+casa por "Pedro". Adotado **Pedro Henrique da Paixão Sousa** por dois motivos: o sobrenome
+Sousa bate com a planilha e o número é do PV, como os outros nove aliados. Vale confirmar.
+
+## F.3 O que falta
+
+**28 arquivos, 264 MB**, todos acima de 6 MB — precisam ser refatiados em partes de
+**até 6 MB** (por segurança, 5 MB). Isso multiplica o número de partes: Belo Horizonte
+sairia de 19 para ~35 partes.
+
+Duas saídas melhores que refatiar:
+
+1. **Liberar a rede** para `drive.google.com` (Rota A do `PROGRESSO.md`): `gdown --folder`
+   traz os 294 MB de uma vez, sem teto e sem a queda de sessão a cada arquivo.
+2. **Reduzir na origem antes de subir**: filtrar só o cargo Vereador e descartar as
+   colunas constantes (`DT_GERACAO`, `HH_GERACAO`, `NM_TIPO_ELEICAO`, `DS_ELEICAO`,
+   `DT_ELEICAO`, `TP_ABRANGENCIA`, `SG_UE`, `NM_UE`, `CD_ELEICAO`, `CD_TIPO_ELEICAO`) —
+   dez das 26 colunas são iguais em todas as linhas. Deve cortar mais da metade do volume
+   e trazer a maioria dos municípios para baixo de 6 MB sem refatiar.
