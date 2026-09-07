@@ -139,7 +139,9 @@ function cards(){
       c.vence_em!=null?` · 1º lugar em ${c.vence_em} de ${c.locais} locais`:''}</div></div>`);
   if(!v22.suprimido){
     el.push(`<div class="card"><h3>Lohanna França — 2022</h3><div class="v">${fmt(v22.total)}</div>
-      <div class="s">no município, somando ${DATA.setores.length.toLocaleString('pt-BR')} setores censitários, cada um uma única vez</div></div>`);
+      <div class="s">${v22.granularidade==='local de votação'
+        ? `para <b>${v22.cargo}</b>, somando os ${fmt(v22.n_locais)} locais de votação do município, cada seção uma única vez`
+        : `no município, somando ${DATA.setores.length.toLocaleString('pt-BR')} setores censitários, cada um uma única vez`}</div></div>`);
     el.push(`<div class="card"><h3>Bairro líder — Lohanna 2022</h3><div class="v">${v22.top_bairro.nome}</div>
       <div class="s">${fmt(v22.top_bairro.votos)} votos · região ${v22.top_bairro.regional}</div></div>`);
   }else{
@@ -333,7 +335,18 @@ function v22(){
     pfill:()=>PINK, praio:b=>comCirc?(b.votos22||0):0.0001,
     ptitulo:'Lohanna · 2022'});
   const V=DATA.votes22, mx=Math.max(...V.regionais.map(r=>r.votos))||1;
-  document.getElementById('vAccord').innerHTML=V.regionais.map((r,i)=>{
+  const nota = V.granularidade==='local de votação'
+   ? `<div class="note"><b>Votos de urna, do TSE.</b> A Lohanna disputou 2022 como <b>${V.cargo}</b>.
+      Os ${fmt(V.total)} votos vêm das seções do município, cada uma contada uma única vez e somada ao seu
+      local de votação; ${fmt(V.n_locais_com_voto)} dos ${fmt(V.n_locais)} locais tiveram ao menos um voto.
+      O local é situado no bairro pela coordenada oficial do TSE, e é por isso que esta camada e a de
+      <span class="yr y24">2024</span> podem ser comparadas: são a mesma unidade.
+      ${V.soma_bairros<V.total?`${fmt(V.total-V.soma_bairros)} votos estão em locais sem bairro atribuído e não aparecem no acordeão.`:''}
+      <br><br><b>Por que não sai da tabela de aderência.</b> A coluna <i>Votos_Candidato</i> daquela tabela não é o
+      voto do setor censitário: é o total do local de votação mais próximo, repetido em cada setor que o local
+      atende. Somá-la sobre os setores multiplicaria a votação pelo número de setores por local.</div>`
+   : '';
+  document.getElementById('vAccord').innerHTML=nota+V.regionais.map((r,i)=>{
     const mb=Math.max(...r.bairros.map(b=>b.v))||1;
     return `<div class="vreg${i===0?' lead open':''}">
       <div class="vhead" onclick="this.parentNode.classList.toggle('open')">
@@ -349,29 +362,104 @@ function v22(){
 document.getElementById('tgCirc').onchange=v22;
 
 /* ------------------------------------------------------ sobreposição */
+const QUAD={
+  comum:  {cor:'#5B3A8E', nome:'Base comum',            desc:'a Lohanna teve voto e o aliado também — o território onde as duas candidaturas já se sobrepõem'},
+  cand:   {cor:NAVY,      nome:'Território do aliado',  desc:'forte para o aliado em 2024 e fraco para a Lohanna em 2022 — onde ele pode entregar voto'},
+  lohanna:{cor:PINK,      nome:'Território da Lohanna', desc:'forte para a Lohanna em 2022 e fraco para o aliado — onde ela pode entregar voto'},
+  vazio:  {cor:'#9aa2bb', nome:'Vazio compartilhado',   desc:'nenhuma das duas chegou — expansão de fato, e a mais cara'}
+};
 function over(){
-  const box=document.getElementById('over');
-  if(DATA.votes24 && DATA.votes24.granularidade!=='municipal'){ box.innerHTML='<div class="note">—</div>'; return; }
-  const comLocal = DATA.votes24 && DATA.votes24.granularidade==='local de votação';
-  box.innerHTML = comLocal
-   ? `<div class="warn"><b>Falta só a coordenada dos locais de votação.</b> A camada de
-      <span class="yr y24">2024</span> já está por <b>local de votação</b> — ${DATA.votes24.n_locais} locais
-      neste município — e a de <span class="yr y22">2022</span> por setor censitário, agregada a bairro.
-      O que impede o cruzamento é que os locais de votação ainda não têm latitude e longitude, sem as quais
-      não dá para dizer a que bairro cada um pertence.
-      <br><br>Com o arquivo de eleitorado por local de votação, que traz essa coordenada, a
-      <b>sobreposição por bairro</b>, os <b>quatro quadrantes</b> e a frente de <b>Reciprocidade</b> entram
-      sem nenhuma outra mudança.
-      <br><br>Enquanto isso, o desempenho local a local está na seção de 2024, acima.</div>`
-   : `<div class="warn"><b>Seção indisponível nesta versão.</b> A comparação território a território
-    entre a base de <span class="yr y24">2024</span> e a de <span class="yr y22">2022</span> — com scatter,
-    correlação de Spearman e os quatro quadrantes (base comum, território do candidato, território da Lohanna e
-    vazio compartilhado) — exige as duas camadas na mesma unidade geográfica.
-    A camada de 2022 está por setor censitário, agregada a bairro. A de 2024 chegou apenas com o total municipal.
-    <br><br>Assim que o arquivo do TSE vier por <b>local de votação</b>, esta seção e a frente de
-    <b>Reciprocidade</b> do plano de mobilização entram sem nenhuma outra mudança —
-    o restante do painel já está montado sobre a unidade correta.
-    <br><br>Conforme a regra de não inventar dado, o bloco fica visível e vazio em vez de preenchido por estimativa.</div>`;
+  const box=document.getElementById('over'), o=DATA.over, v=DATA.votes24;
+  if(!o){
+    box.innerHTML = (v && v.granularidade==='local de votação')
+     ? `<div class="warn"><b>Seção indisponível neste município.</b> A camada de
+        <span class="yr y24">2024</span> está por local de votação, mas não foi possível
+        situar os locais nos bairros — sem isso as duas camadas não caem na mesma unidade
+        geográfica. Conforme a regra de não inventar dado, o bloco fica vazio em vez de
+        preenchido por estimativa.</div>`
+     : `<div class="warn"><b>Seção indisponível neste município.</b> A comparação território a
+        território exige as duas camadas na mesma unidade geográfica: a de 2022 está por setor
+        censitário agregado a bairro, e a de 2024 não chegou por local de votação.
+        ${DATA.votes22.suprimido?'Além disso, a camada de 2022 está suprimida aqui.':''}</div>`;
+    return;
+  }
+  const r=o.spearman;
+  const forca = r==null?'—':Math.abs(r)>=.7?'forte':Math.abs(r)>=.4?'moderada':Math.abs(r)>=.2?'fraca':'praticamente nula';
+  const g=v.geo||{};
+  let h=`<div class="insight"><b>As duas bases medidas no mesmo bairro.</b>
+    ${fmt(o.n)} bairros têm dado nos dois anos. A correlação de postos (Spearman) entre os votos da
+    <span class="yr y22">Lohanna 2022</span> e os de <span class="yr y24">${DATA.apelido} 2024</span>
+    é <b>ρ = ${r==null?'—':r.toFixed(3).replace('.',',')}</b> — associação <b>${forca}</b>${r!=null&&r>0?' e positiva':''}:
+    ${r!=null&&r>=.4
+      ? 'os territórios das duas candidaturas se parecem, e a maior parte do esforço é de <b>consolidação conjunta</b>.'
+      : 'os territórios são bastante distintos, e é aí que a <b>reciprocidade</b> vale mais — cada um leva voto onde o outro não tem.'}</div>`;
+
+  h+=`<div class="note"><b>Como o cruzamento é feito.</b> A camada de 2022 vem de setor censitário
+    agregado a bairro; a de 2024, de ${fmt(g.locais)} locais de votação situados no bairro pela sua
+    coordenada oficial do TSE (${fmt(g.por_poligono)} dentro do polígono do bairro,
+    ${fmt(g.por_centroide)} pelo centroide mais próximo${g.com_bairro<g.locais?`, ${fmt(g.locais-g.com_bairro)} sem bairro atribuído e por isso fora do cruzamento`:''}).
+    Nenhum número é estimado: são duas contagens reais somadas na mesma unidade.
+    O corte de cada eixo é a <b>mediana</b> entre esses bairros — ${fmt(o.corte22)} votos em 2022 e
+    ${fmt(o.corte24)} em 2024 —, um limiar relativo a este município.</div>`;
+
+  /* --- scatter --- */
+  const W=640,H=420,pad={l:56,r:16,t:16,b:44};
+  const mx22=Math.max(...o.pontos.map(p=>p[1]))||1, mx24=Math.max(...o.pontos.map(p=>p[2]))||1;
+  const X=x=>pad.l+(W-pad.l-pad.r)*Math.sqrt(x/mx22);
+  const Y=y=>H-pad.b-(H-pad.t-pad.b)*Math.sqrt(y/mx24);
+  let sv=`<svg viewBox="0 0 ${W} ${H}" class="scatter" preserveAspectRatio="xMidYMid meet">`;
+  sv+=`<rect x="${pad.l}" y="${pad.t}" width="${W-pad.l-pad.r}" height="${H-pad.t-pad.b}" fill="#fafbfd" stroke="#e3e6f0"/>`;
+  sv+=`<line x1="${X(o.corte22).toFixed(1)}" y1="${pad.t}" x2="${X(o.corte22).toFixed(1)}" y2="${H-pad.b}" stroke="#b9c0d4" stroke-dasharray="4 3"/>`;
+  sv+=`<line x1="${pad.l}" y1="${Y(o.corte24).toFixed(1)}" x2="${W-pad.r}" y2="${Y(o.corte24).toFixed(1)}" stroke="#b9c0d4" stroke-dasharray="4 3"/>`;
+  [[0,'0'],[.25,''],[.5,''],[1,'']].forEach(()=>{});
+  [0,.25,.5,.75,1].forEach(t=>{
+    const vx=Math.round(mx22*t*t), vy=Math.round(mx24*t*t);
+    sv+=`<text x="${X(vx).toFixed(1)}" y="${H-pad.b+15}" class="ax" text-anchor="middle">${fmt(vx)}</text>`;
+    sv+=`<text x="${pad.l-7}" y="${(Y(vy)+4).toFixed(1)}" class="ax" text-anchor="end">${fmt(vy)}</text>`;
+  });
+  o.pontos.forEach(p=>{
+    sv+=`<circle cx="${X(p[1]).toFixed(1)}" cy="${Y(p[2]).toFixed(1)}" r="5" fill="${QUAD[p[3]].cor}"
+      fill-opacity=".72" stroke="#fff" stroke-width="1" data-b="${String(p[0]).replace(/"/g,'&quot;')}"
+      data-v="${p[1]}|${p[2]}|${p[3]}|${String(p[4]||'').replace(/"/g,'&quot;')}"></circle>`;
+  });
+  sv+=`<text x="${(pad.l+(W-pad.r))/2}" y="${H-8}" class="axt" text-anchor="middle">votos da Lohanna · 2022</text>`;
+  sv+=`<text x="14" y="${(pad.t+(H-pad.b))/2}" class="axt" text-anchor="middle" transform="rotate(-90 14 ${((pad.t+(H-pad.b))/2).toFixed(1)})">votos de ${DATA.apelido} · 2024</text>`;
+  sv+=`</svg>`;
+  h+=`<div class="scwrap">${sv}</div>
+    <div class="qleg">${Object.entries(QUAD).map(([k,q])=>
+      `<span><i style="background:${q.cor}"></i>${q.nome} <b>${fmt(o.n_quad[k])}</b></span>`).join('')}</div>
+    <p class="axn">Os eixos são de raiz quadrada: sem isso a nuvem se amontoaria perto da origem e os
+      bairros grandes tomariam o gráfico inteiro. As linhas tracejadas são as medianas.</p>`;
+
+  /* --- mapa por quadrante --- */
+  const q4=Object.fromEntries(o.pontos.map(p=>[p[0],p[3]]));
+  h+=`<h3 class="hsec">Os quatro quadrantes no mapa</h3><div id="mapQ" class="mapbox"></div>`;
+
+  /* --- listas por quadrante --- */
+  h+=`<div class="quads">`+Object.entries(QUAD).map(([k,q])=>{
+    const arr=o.quadrantes[k]||[];
+    return `<div class="qcol" style="--qc:${q.cor}"><h4>${q.nome}
+      <span class="sub">${fmt(o.n_quad[k])} bairros</span></h4>
+      <p class="qd">${q.desc}</p>
+      ${arr.length?arr.map(x=>`<div class="qrow"><b>${x.b}</b>
+        <span class="qv"><span class="yr y22">${fmt(x.v22)}</span> · <span class="yr y24">${fmt(x.v24)}</span></span></div>`).join('')
+        :'<div class="qrow" style="opacity:.6">nenhum bairro</div>'}</div>`;
+  }).join('')+`</div>`;
+
+  box.innerHTML=h;
+  desenhaMapa(document.getElementById('mapQ'),{
+    fill:p=>q4[p.bairro]?QUAD[q4[p.bairro]].cor:'#e6e9f2',
+    sel:p=>!!q4[p.bairro],
+    pfill:b=>q4[b.Bairro]?QUAD[q4[b.Bairro]].cor:'#d5d9e6',
+    praio:b=>q4[b.Bairro]?b.setores:0.2*b.setores});
+  box.querySelectorAll('.scatter circle').forEach(c=>{
+    c.onmousemove=e=>{const [a,b,k,rg]=c.dataset.v.split('|');
+      showTip(e,`<b>${c.dataset.b}</b>${rg?`<br><span class="m">${rg}</span>`:''}
+        <br><span class="yr y22">2022</span> ${fmt(+a)} votos
+        <br><span class="yr y24">2024</span> ${fmt(+b)} votos
+        <br><span class="m">${QUAD[k].nome}</span>`);};
+    c.onmouseleave=hideTip;
+  });
 }
 
 /* ------------------------------------------------------- mobilização */
@@ -384,8 +472,14 @@ function mob(){
     <div class="insight"><b>Frente 2 – Expansão (rosa):</b> score = ${M.pesos.exp}.
       Onde a pauta adere e o voto não chegou: <b>abrir território</b> — lideranças locais primeiro,
       rodas de conversa, recorrência semanal em vez de um evento único.</div>
-    <div class="note"><b>Frente 3 – Reciprocidade</b> (território forte de uma candidatura e fraco da outra)
-      depende da camada de 2024 por local de votação e por isso não entra nesta versão.</div>`;
+    ${DATA.over?`<div class="insight" style="border-left-color:#5B3A8E"><b>Frente 3 – Reciprocidade (roxo):</b>
+      o que cada candidatura leva de novo para a outra. A medida é a diferença entre a
+      <b>fatia do município</b> que o bairro representa em cada camada — cada ano normalizado pelo seu
+      próprio total, senão a camada de maior volume dominaria por puro tamanho.
+      <b>${DATA.apelido} entrega</b> onde é forte e a Lohanna é fraca; <b>a Lohanna entrega</b> no inverso.
+      A lista vem logo abaixo do plano.</div>`
+     :`<div class="note"><b>Frente 3 – Reciprocidade</b> (território forte de uma candidatura e fraco da outra)
+      depende da camada de 2024 por local de votação e por isso não entra neste município.</div>`}`;
 
   const alvo=new Set([...M.cons,...M.exp].map(x=>x.b));
   const cons=new Set(M.cons.map(x=>x.b));
@@ -404,6 +498,23 @@ ${DATA.votes22.suprimido?'':`<span class="yr y22">2022</span> ${fmt(x.votos22)} 
         <span class="sc">${f1(x[campo])}</span></div>`).join('')}</div>`;
   document.getElementById('lists').innerHTML=
     bloco('Consolidação','cons',M.cons,'cons')+bloco('Expansão','exp',M.exp,'exp');
+
+  /* --- Frente 3: reciprocidade, bairro a bairro --- */
+  const R=document.getElementById('recip'), o=DATA.over;
+  if(!o){ R.innerHTML=''; return; }
+  const lista=(t,cls,arr)=>`<div class="front ${cls}"><h3>${t}
+      <span class="sub">${arr.length} bairros</span></h3>
+      ${arr.length?arr.map((x,i)=>`<div class="trow"><span class="n">${i+1}</span>
+        <div class="info"><b>${x.b}</b><span class="rg">${x.reg||'—'}</span>
+          <span class="rg"><span class="yr y22">2022</span> ${fmt(x.v22)} (${f1(x.s22)}%) ·
+            <span class="yr y24">2024</span> ${fmt(x.v24)} (${f1(x.s24)}%)</span></div>
+        <span class="sc">${f1(Math.abs(x.dif))} p.p.</span></div>`).join('')
+       :'<div class="trow" style="opacity:.6">nenhum bairro nesta condição</div>'}</div>`;
+  R.innerHTML = `<h3 class="hsec">Frente 3 – Reciprocidade: quem leva voto para quem</h3>`
+    + `<div class="lists">`
+    + lista(`Onde ${DATA.apelido} entrega à Lohanna`,'cons',o.recip_cand)
+    + lista('Onde a Lohanna entrega ao aliado','exp',o.recip_loh)
+    + `</div>`;
 }
 
 /* ------------------------------------------------- gráficos por eixo */
@@ -471,9 +582,14 @@ function comp(){
   if(!v){document.getElementById('pCand').style.display='none';return;}
   const c=v.candidato;
   const acima=v.mais_votados.filter(r=>r.pos<c.pos);
-  let h=`<div class="note"><b>Recorte municipal.</b> Sem os votos por local de votação, não é possível
-    dizer quem disputa o eleitorado de ${DATA.apelido} <b>bairro a bairro</b> — só quem disputa no município.
-    O bloco por bairro entra junto com a seção de sobreposição.</div>`;
+  const CB=DATA.comp_bairro;
+  let h = CB
+   ? `<div class="note"><b>Recorte municipal e por bairro.</b> Abaixo, quem divide o eleitorado com
+      ${DATA.apelido} no município inteiro; mais adiante, bairro a bairro — os três mais votados em cada um,
+      a partir dos locais de votação situados ali pela coordenada do TSE.</div>`
+   : `<div class="note"><b>Recorte municipal.</b> Sem os votos por local de votação situados no bairro, não é
+      possível dizer quem disputa o eleitorado de ${DATA.apelido} <b>bairro a bairro</b> — só quem disputa no
+      município. O bloco por bairro entra junto com a seção de sobreposição.</div>`;
   h+=`<div class="insight"><b>A disputa em ${DATA.municipio} em <span class="yr y24">2024</span>:</b>
     ${fmt(v.n_cands)} candidatos a vereador dividiram ${fmt(v.total_nominal)} votos nominais.
     ${DATA.apelido} ficou em <b>${c.pos}º</b> com ${fmt(c.votos)} votos —
@@ -499,6 +615,31 @@ function comp(){
                             label:c2=>`${fmt(c2.raw)} votos · ${f1(top[c2.dataIndex].pct)}%`}}},
       scales:{x:{beginAtZero:true,ticks:{callback:v2=>fmt(v2)}},
               y:{ticks:{autoSkip:false,font:{size:11}}}}}});
+  /* --- quem disputa, bairro a bairro --- */
+  if(CB){
+    const linhas=(DATA.votes24.bairros||[]).filter(b=>CB[b.b]);
+    const venc=linhas.filter(b=>CB[b.b].pos===1).length;
+    box.insertAdjacentHTML('beforeend',
+      `<h3 class="hsec">Quem disputa o eleitorado, bairro a bairro</h3>
+       <div class="note">${DATA.apelido} é o mais votado em <b>${fmt(venc)}</b> dos ${fmt(linhas.length)} bairros
+         com dado de 2024. Os votos de um bairro são a soma dos locais de votação situados nele; locais sem
+         coordenada ficam de fora, e por isso a soma da tabela pode ficar abaixo do total municipal.</div>
+       <div style="max-height:460px;overflow:auto;border:1.5px solid #e3e6f0;border-radius:10px;">
+       <table class="cbtab"><thead><tr>
+         <th>Bairro</th><th class="num">${DATA.apelido}</th><th class="num">pos.</th>
+         <th>Os três mais votados no bairro</th></tr></thead><tbody>` +
+      linhas.map(b=>{const c=CB[b.b];const win=c.pos===1;
+        return `<tr class="${win?'win':''}"><td><b>${b.b}</b>
+          <div style="font-size:.7rem;color:var(--muted)">${b.reg||'—'} · ${b.locais} local${b.locais>1?'is':''}</div></td>
+          <td class="num"><b style="color:${win?'var(--pink)':'var(--navy)'}">${fmt(b.v)}</b>
+            <div style="font-size:.7rem;color:var(--muted)">${f1(b.pct)}%</div></td>
+          <td class="num">${c.pos?c.pos+'º':'—'}<div style="font-size:.7rem;color:var(--muted)">de ${c.n}</div></td>
+          <td>${c.top.map(t=>`<span style="color:${t.nr===String(DATA.numero)?'var(--pink)':'var(--txt)'};
+            font-weight:${t.nr===String(DATA.numero)?'700':'400'}">${curto(t.nome)} ${fmt(t.v)}</span>`).join(' · ')}</td>
+        </tr>`;}).join('') +
+      `</tbody></table></div>`);
+  }
+
 }
 
 /* --------------------------------------------------------- rodapé */
@@ -510,11 +651,15 @@ function foot(){
     f.geo?`<b>Geometria:</b> ${f.geo}`:null,
     `<b>Unidade geográfica:</b> ${m.unidade}. ${m.unidade_por_que}`,
     `<b>Índice:</b> percentil médio do valor ajustado, normalizado por pauta, escala 0–100.`,
-    `<b>Sem dupla contagem:</b> cada setor censitário entra uma única vez na soma de votos.`,
+    DATA.votes22.granularidade==='local de votação'
+      ? `<b>Camada 2022 — origem:</b> votos de urna do TSE (${DATA.votes22.cargo}, 2022) por seção, somados ao local de votação, cada seção uma única vez. NÃO vem da coluna <i>Votos_Candidato</i> da tabela de aderência: aquela coluna repete, em cada setor, o total do local de votação mais próximo, e somá-la sobre os setores infla a votação em várias vezes.`
+      : `<b>Sem dupla contagem:</b> cada setor censitário entra uma única vez na soma de votos.`,
+    DATA.votes22.geo?`<b>Locais de votação de 2022:</b> ${DATA.votes22.geo.com_bairro} de ${DATA.votes22.geo.locais} situados num bairro (${DATA.votes22.geo.por_poligono} por polígono, ${DATA.votes22.geo.por_centroide} por centroide); os demais ficam fora do recorte por bairro e não são rateados.`:null,
     m.cobertura?`<b>Cobertura:</b> ${m.setores_observados} de ${m.setores_declarados} setores do município (${f1(m.cobertura)}%) — os que têm endereço CNEFE correspondido. O índice descreve esses setores, não o município inteiro.`:null,
     `<b>Filtro de robustez:</b> rankings de bairro exigem ao menos ${m.min_setores} setores — ${m.min_setores_por_que}.`,
     DATA.votes22.suprimido?`<b>ATENÇÃO — camada 2022 suprimida:</b> ${DATA.votes22.motivo}`:null,
-    `<b>Ressalva:</b> 2022 e 2024 são pleitos e cargos diferentes e nunca são somados. A camada de 2024 está no nível municipal nesta versão.`,
+    DATA.votes24&&DATA.votes24.geo?`<b>Situação dos locais de votação:</b> ${DATA.votes24.geo.com_bairro} de ${DATA.votes24.geo.locais} locais foram atribuídos a um bairro (${DATA.votes24.geo.por_poligono} por estarem dentro do polígono, ${DATA.votes24.geo.por_centroide} pelo centroide mais próximo, dentro de 3 km); ${DATA.votes24.geo.locais-DATA.votes24.geo.com_coord} não têm coordenada na fonte do TSE. Os não atribuídos ficam fora do cruzamento por bairro, e não são rateados.`:null,
+    `<b>Ressalva:</b> 2022 e 2024 são pleitos e cargos diferentes e nunca são somados. ${DATA.over?'A sobreposição compara os dois anos bairro a bairro, mas sempre como duas contagens lado a lado.':(DATA.votes24&&DATA.votes24.granularidade==='local de votação'?'A camada de 2024 está por local de votação.':'A camada de 2024 está no nível municipal nesta versão.')}`,
     `Painel 100% offline: nenhuma requisição a servidor externo. Coordenadas em SIRGAS 2000 (EPSG:4674), equivalentes a WGS 84 nesta escala.`,
     `Gerado em ${m.gerado_em}.`,
   ].filter(Boolean);

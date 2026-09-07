@@ -1,8 +1,18 @@
 # PROGRESSO — Painéis de candidatos aliados
 
-Atualizado: 2026-09-06 (2ª rodada) · Branch `claude/electoral-panel-allied-candidates-wfput7`
+Atualizado: 2026-09-07 (Rota A executada) · Branch `claude/electoral-panel-allied-candidates-wfput7`
 
-## Estado: PAUSADO no passo 1 — bloqueio de acesso confirmado por 3 rotas
+## Estado: CONCLUÍDO — 10 painéis entregues, com as duas camadas e a sobreposição
+
+> **Leia primeiro a última seção, "ROTA A EXECUTADA" (2026-09-07).** A rede foi liberada,
+> todos os dados chegaram, e a camada de votos de 2022 de **todos os dez painéis** foi
+> reconstruída: a coluna da planilha que vinha sendo usada não era o voto do setor
+> censitário, e inflava a votação de 3× a 11×. As seções abaixo ficam como registro
+> histórico; onde divergirem da última, vale a última.
+
+<details><summary>Histórico das rodadas anteriores (2026-09-03 a 06)</summary>
+
+## Estado (2ª rodada): PAUSADO no passo 1 — bloqueio de acesso confirmado por 3 rotas
 
 2ª tentativa feita a pedido do usuário. Os dados de 2022 foram adicionados à pasta,
 mas os arquivos continuam grandes demais: o conector do Drive tem **teto medido de
@@ -487,3 +497,175 @@ a soma dos locais no próprio painel.
   exatamente isso, em vez de dizer genericamente que a camada de 2024 não existe.
 - **29 arquivos do TSE** (Belo Horizonte, Uberlândia, Betim, Divinópolis e Conselheiro
   Lafaiete), todos acima do teto prático de ~6 MB do conector.
+
+</details>
+
+---
+
+# ROTA A EXECUTADA — rede liberada, dados completos (2026-09-07)
+
+A allowlist do ambiente foi ajustada e o Drive passou a responder. Os cinco arquivos
+foram baixados com `gdown` direto para o disco do contêiner, sem passar pelo contexto
+do modelo. **Todos os bloqueios de dados caíram.**
+
+```
+https://drive.google.com          -> 302   (antes: 403)
+https://docs.google.com           -> 302
+https://drive.usercontent.google  -> 404 (host responde; o 404 é da raiz)
+```
+
+## O achado que mudou os dez painéis
+
+**A coluna `Votos_Candidato` da tabela de aderência não é o voto do setor censitário.**
+É o total do **local de votação mais próximo**, repetido em cada setor que aquele local
+atende. Somá-la sobre os setores multiplica a votação pelo número de setores por local.
+
+Como foi verificado — três testes independentes, não uma suspeita:
+
+1. **Contra a fonte.** No `votacao_secao_2022_MG` do TSE, a Lohanna disputou 2022 como
+   **Deputada Estadual**. Em Uberlândia teve **476** votos; a soma da planilha dava 5.173.
+   Em Belo Horizonte, **7.849** contra 87.255.
+2. **O teto bate exatamente.** O maior valor por setor na planilha de Uberlândia é 25 —
+   e o maior total por local de votação no TSE é 25, no mesmo município.
+3. **Setor a setor.** Atribuindo cada setor ao local de votação mais próximo pela
+   coordenada, o valor da planilha é **exatamente** o total daquele local em **96,8%**
+   dos setores de Uberlândia, 91,4% de Divinópolis e 81,7% de Mariana. As diferenças são
+   onde o "mais próximo" calculado aqui difere do critério da planilha, não o mecanismo.
+
+### O que isso corrigiu
+
+| Município | Painéis antigos | Real (TSE) | Inflação |
+|---|---:|---:|---:|
+| Belo Horizonte | 87.255 | **7.849** | 11,1× |
+| Uberlândia | 5.173 | **476** | 10,9× |
+| Betim | 5.711 | **632** | 9,0× |
+| Pará de Minas | 3.830 | **542** | 7,1× |
+| Conselheiro Lafaiete | 1.923 | **576** | 3,3× |
+| São João del-Rei | 1.737 | **482** | 3,6× |
+| Lagoa Santa | 772 | **129** | 6,0× |
+| Curvelo | 745 | **130** | 5,7× |
+| Mariana | 637 | **188** | 3,4× |
+| Divinópolis | *suprimida* | **24.045** | — |
+
+A camada de 2022 dos dez painéis foi **inteiramente reconstruída** a partir do TSE, por
+local de votação — a mesma unidade da camada de 2024. O índice de aderência, as 22 pautas
+e tudo o que deriva delas não mudam: `Valor_Ajustado` é outra coluna e continua por setor.
+
+### Divinópolis: a supressão era falso positivo
+
+A camada de 2022 de Divinópolis tinha sido suprimida por "escala incompatível" — mediana de
+387 votos por setor contra 3 a 18 nos outros. Com o mecanismo entendido, a explicação é
+outra: **Divinópolis é a cidade da Lohanna**, onde ela foi a 2ª mais votada do município
+com **24.045 votos**, e o valor por local é grande de fato. A supressão foi removida e o
+painel da Kell Silva passa a ter a camada de 2022 completa, com o maior volume dos dez.
+
+## Seção 7 (Sobreposição) e Frente 3 (Reciprocidade): entregues
+
+Era o que faltava desde o começo, e o que faltava era a **coordenada dos locais de votação**.
+Ela está em `eleitorado_local_votacao_<ano>.csv` (`NR_LATITUDE`/`NR_LONGITUDE`), agora baixado.
+
+Com ela, cada local de votação é situado num bairro — dentro do polígono do IBGE onde há
+malha, pelo centroide mais próximo (até 3 km) no resto —, e as duas camadas passam a existir
+na mesma unidade geográfica. **Nada é estimado: são duas contagens reais somadas por bairro.**
+
+O que o painel passou a mostrar:
+
+- **Scatter 2022 × 2024** por bairro, eixos em raiz quadrada, com as medianas como corte;
+- **ρ de Spearman** entre as duas bases, com a leitura em texto;
+- **os quatro quadrantes** — base comum, território do aliado, território da Lohanna, vazio
+  compartilhado — em lista e **no mapa**;
+- **Frente 3 – Reciprocidade**: quem leva voto para quem, medido pela diferença de *fatia do
+  município* entre as camadas (cada ano normalizado pelo seu próprio total);
+- **inteligência competitiva bairro a bairro**: os três mais votados em cada bairro, com o
+  aliado destacado, e em quantos bairros ele é o primeiro.
+
+## Estado final dos dez painéis
+
+| Candidato | Município | Lohanna 2022 | Candidato 2024 | ρ | Base comum |
+|---|---|---:|---|---:|---:|
+| Sara Vitral | Belo Horizonte | 7.849 | 2.136 (139º de 877) | 0,687 | sim |
+| Fabão | Uberlândia | 476 | **14.596 (1º de 548)** | 0,698 | sim |
+| Kell Silva | Divinópolis | **24.045** | 2.195 (9º de 267) | 0,880 | sim |
+| Sinara Campos | São João del-Rei | 482 | **2.355 (1º de 218)** | 0,881 | sim |
+| Damires Rinarlly | Conselheiro Lafaiete | 576 | **3.406 (2º de 221)** | 0,897 | sim |
+| Marcelo Monteiro | Lagoa Santa | 129 | 1.156 (6º de 214) | 0,761 | sim |
+| Douglas Veríssimo | Curvelo | 130 | 1.058 (7º de 222) | 0,829 | sim |
+| Pedro Sousa | Mariana | 188 | 620 (25º de 155) | 0,813 | sim |
+| Irene Melo Franco | Pará de Minas | 542 | 619 (21º de 242) | 0,626 | sim |
+| Professor Gabriel Mendes | Betim | 632 | não disputou | — | camada única |
+
+**Damires Rinarlly** aparece aqui com número novo: 3.406 votos e **2º lugar** em Conselheiro
+Lafaiete. Nas rodadas anteriores o município não tinha arquivo do TSE.
+
+Nove dos dez painéis têm agora as duas camadas e a sobreposição completa. O de Gabriel Mendes
+segue de camada única — ele não disputou 2024 —, e a seção de sobreposição aparece com a
+explicação, não preenchida.
+
+### Conferência (todos os dez)
+
+Os totais de 2022 batem **exatamente** com o TSE nos dez municípios, e os de 2024 nos nove
+que têm candidato. Dentro de cada painel, a soma dos bairros e a soma das regiões batem entre
+si; ficam abaixo do total municipal apenas pelos locais de votação sem coordenada na fonte do
+TSE, que **não são rateados** — cada painel diz no rodapé quantos são.
+
+### QA (§9) — os dez aprovados
+
+`qa_lote.py`, em Chromium sobre cada arquivo, agora cobrindo também as seções novas:
+**0 erros de JavaScript, 0 requisições de rede, 0 ocorrências de NaN/undefined/Infinity**,
+seletor de métrica movendo mapa + ranking + legenda juntos, sem estouro horizontal em 900 e
+380 px, e scatter, mapa de quadrantes, listas de reciprocidade e tabela competitiva por bairro
+renderizando em todos os que têm as duas camadas.
+
+Tamanhos: 0,37 MB a 1,95 MB — todos abaixo do teto de ~2 MB.
+
+## Ferramentas novas desta rodada
+
+| Script | O que faz |
+|---|---|
+| `filtrar_bruto.py` | recorta os CSVs do TSE (1–2 GB) para os 10 municípios, lendo em fluxo de dentro do `.zip` |
+| `geo_locais.py` | extrai lat/lon, bairro e eleitorado dos locais de votação (`--ano 2022` / `2024`) |
+| `agregar_2022.py` | votos da Lohanna em 2022 por local de votação, direto da fonte |
+
+`agregar_2024.py`, `preparar_geo.py`, `gerar_painel.py`, `montar_painel.py` e `qa_lote.py`
+continuam válidos. `preparar_dados.py` e `colher.py` viraram legado: existiam para contornar
+o bloqueio de rede, que não existe mais.
+
+## Como reproduzir do zero
+
+```bash
+pip install gdown pandas openpyxl playwright
+mkdir -p dados/bruto
+gdown 1JHxAAszjaIZDR2AG4paIZwEZrrzrSeuJ -O dados/bruto/votacao_secao_2024_MG.zip
+gdown 17xnxWXMqL-aFoIH952-3_Lr5w6GGeoiA -O dados/bruto/votacao_secao_2022_MG.zip
+gdown 1JUUZVHt-2E3AxjElOL5BY3ErlNHpuUNN -O dados/bruto/eleitorado_local_votacao_2024.zip
+gdown 13xLTneLip4kv0fPXb4Ev74MvqeX3xxrm -O dados/bruto/eleitorado_local_votacao_2022.zip
+(cd dados/bruto && unzip -o eleitorado_local_votacao_2024.zip eleitorado_local_votacao_2024.csv \
+                && unzip -o eleitorado_local_votacao_2022.zip eleitorado_local_votacao_2022.csv)
+
+python3 filtrar_bruto.py --ano 2024 && python3 filtrar_bruto.py --ano 2022
+python3 geo_locais.py   --ano 2024 && python3 geo_locais.py   --ano 2022
+python3 agregar_2024.py            && python3 agregar_2022.py
+./gerar_todos.sh
+python3 qa_lote.py
+```
+
+Pico de disco ~3 GB. `dados/geo/locais_*.csv` e `dados/tse2022_locais/` estão commitados
+(250 KB no total), então quem só quiser regerar os painéis de 2022 pula os dois maiores
+downloads. `dados/tse2024_locais/` tem 36 MB e ficou de fora.
+
+## O que continua em aberto
+
+1. **Locais de votação sem coordenada na fonte do TSE.** São 36 de 1.040 em 2024 e 45 de
+   1.028 em 2022, concentrados em São João del-Rei (21 de 66) e Belo Horizonte (10 de 439).
+   Esses locais entram nos totais municipais, mas ficam fora do recorte por bairro — o
+   rodapé de cada painel diz quantos são. Resolver exige geocodificar os endereços, o que
+   pede um serviço externo.
+2. **Seis municípios sem malha de bairros do IBGE** (Divinópolis, Pará de Minas, Lagoa
+   Santa, Mariana, Conselheiro Lafaiete, Curvelo). Neles o bairro vem do campo de endereço
+   e o mapa é de pontos, não coroplético. Com a rede aberta, a malha de setores censitários
+   do IBGE passou a ser alcançável e permitiria construir bairros por agregação — não foi
+   feito nesta rodada.
+3. **Professor Gabriel Mendes em Belo Horizonte.** A planilha o lista em Betim *e* BH; o
+   painel entregue é o de Betim. O de BH sai com um comando, se for o caso.
+4. **Ordem de leitura dos painéis** — a planilha sugere Gabriel Mendes primeiro; segue sem
+   confirmação.

@@ -9,6 +9,9 @@ dados/geo/MG_bairros_CD2022.cpg
 dados/*.zip
 dados/*.csv
 dados/tse2024_secao/
+dados/tse2022_secao/
+# Agregados por local de votação: reproduzíveis com agregar_2024.py / agregar_2022.py.
 dados/tse2024_locais/
 dados_filtrados/
 dados/cand_b64.txt
+dados/bruto/

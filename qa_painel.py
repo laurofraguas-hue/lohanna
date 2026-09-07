@@ -24,7 +24,12 @@ async def main(path):
                           ("acordeão 2022",".vreg"),("linhas da tabela","#tb tbody tr"),
                           ("colunas Top10","#tops .topcol"),("frentes de mobilização",".front"),
                           ("bairros-alvo",".front .trow"),("gráficos (canvas)","canvas"),
-                          ("mapa mobilização","#mapM svg path"),("competitiva",".crow")]:
+                          ("mapa mobilização","#mapM svg path"),("competitiva",".crow"),
+                          ("scatter da sobreposição",".scatter circle"),
+                          ("mapa dos quadrantes","#mapQ svg path, #mapQ svg circle"),
+                          ("listas de quadrante",".qcol .qrow"),
+                          ("reciprocidade","#recip .trow"),
+                          ("competitiva por bairro",".cbtab tbody tr")]:
             c = await n(sel); print(f"   {nome:26s} {c:5d}{'   <-- VAZIO' if c==0 else ''}")
 
         print("\n### TEXTO VISÍVEL — amostras")

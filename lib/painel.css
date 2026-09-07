@@ -129,3 +129,36 @@ footer{text-align:center;font-size:.75rem;color:var(--muted);padding:18px;line-h
 #cSvgmap svg{width:100%;height:auto;}
 #cCity2wrap{display:none;margin-top:14px;}
 
+
+/* ---- sobreposição das duas bases (seção 7) ---- */
+.scwrap{border:1.5px solid #e3e6f0;border-radius:10px;background:#fff;padding:6px;margin:10px 0 6px;}
+.scatter{width:100%;height:auto;display:block;}
+.scatter .ax{font-size:10px;fill:#6b7390;}
+.scatter .axt{font-size:11px;fill:#39406090;font-weight:700;fill:#394060;}
+.scatter circle{cursor:pointer;}
+.scatter circle:hover{stroke:#1B2A55;stroke-width:2;}
+.qleg{display:flex;flex-wrap:wrap;gap:14px;font-size:.75rem;color:var(--muted);margin-bottom:4px;}
+.qleg span{display:flex;align-items:center;gap:5px;}
+.qleg i{width:11px;height:11px;border-radius:50%;display:inline-block;}
+.qleg b{color:var(--navy);}
+.axn{font-size:.72rem;color:var(--muted);margin:2px 0 14px;line-height:1.5;}
+.hsec{font-size:.85rem;color:var(--navy);margin:18px 0 8px;}
+.mapbox{border:1.5px solid #e3e6f0;border-radius:10px;padding:6px;background:#fff;}
+.quads{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px;}
+.qcol{border:1.5px solid #e3e6f0;border-top:4px solid var(--qc);border-radius:8px;padding:10px 12px;background:#fff;}
+.qcol h4{font-size:.82rem;color:var(--qc);margin:0 0 2px;}
+.qcol h4 .sub{font-weight:400;font-size:.72rem;color:var(--muted);margin-left:6px;}
+.qd{font-size:.73rem;color:var(--muted);margin:0 0 8px;line-height:1.45;}
+.qrow{display:flex;justify-content:space-between;gap:8px;font-size:.78rem;padding:3px 0;border-top:1px solid #f0f2f7;}
+.qrow b{color:var(--navy);font-weight:600;}
+.qv{color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums;}
+#recip{margin-bottom:16px;}
+#recip .lists{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+/* ---- inteligência competitiva por bairro ---- */
+.cbtab{width:100%;border-collapse:collapse;font-size:.78rem;}
+.cbtab th{position:sticky;top:0;background:#f4f5f9;color:var(--navy);font-size:.72rem;
+  text-align:left;padding:6px 8px;border-bottom:1.5px solid #e3e6f0;z-index:1;}
+.cbtab td{padding:5px 8px;border-bottom:1px solid #f0f2f7;vertical-align:top;}
+.cbtab tr.win td{background:#fdf3f8;}
+.cbtab .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+@media(max-width:900px){.quads,#recip .lists{grid-template-columns:1fr;}}

@@ -97,13 +97,129 @@ def carregar_geo(mun_slug):
     return None, None
 
 
-def montar_votes24_locais(df, apelido, numero, mun_nome):
+# --------------------------------------------- locais de votação (geo)
+
+def carregar_geo_locais(mun_nome, ano=2024):
+    """Geocodificação dos locais de votação de 2024 (lat/lon, bairro, eleitorado).
+
+    Vem de `eleitorado_local_votacao_2024.csv` do TSE, colapsado para uma linha
+    por (município, zona, local) por `geo_locais.py`. É esta coordenada que
+    permite dizer a que bairro cada local pertence — e, com isso, cruzar a camada
+    de 2024 com a de 2022 na mesma unidade geográfica."""
+    p = f"dados/geo/locais_{ano}.csv"
+    if not os.path.exists(p):
+        return None, None
+    d = pd.read_csv(p, dtype=str)
+    d = d[d["NM_MUNICIPIO"].map(norm) == norm(mun_nome)].copy()
+    if d.empty:
+        return None, None
+    for c in ("NR_LATITUDE", "NR_LONGITUDE"):
+        d[c] = pd.to_numeric(d[c], errors="coerce")
+    d["_k"] = d["NR_ZONA"].astype(str) + "-" + d["NR_LOCAL_VOTACAO"].astype(str)
+    return d, p
+
+
+def _no_anel(lon, lat, anel):
+    """Ray casting: o ponto está dentro deste anel de coordenadas?"""
+    dentro = False
+    n = len(anel)
+    j = n - 1
+    for i in range(n):
+        xi, yi = anel[i][0], anel[i][1]
+        xj, yj = anel[j][0], anel[j][1]
+        if (yi > lat) != (yj > lat):
+            if lon < (xj - xi) * (lat - yi) / (yj - yi) + xi:
+                dentro = not dentro
+        j = i
+    return dentro
+
+
+def _no_poligono(lon, lat, coords, tipo):
+    """Polygon/MultiPolygon do GeoJSON, respeitando buracos (anéis internos)."""
+    partes = [coords] if tipo == "Polygon" else coords
+    for p in partes:
+        if not p or not _no_anel(lon, lat, p[0]):
+            continue
+        if not any(_no_anel(lon, lat, buraco) for buraco in p[1:]):
+            return True
+    return False
+
+
+def _caixa(coords, tipo):
+    partes = [coords] if tipo == "Polygon" else coords
+    xs, ys = [], []
+    for p in partes:
+        for x, y in p[0]:
+            xs.append(x); ys.append(y)
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def atribuir_bairro_aos_locais(locais, geo, xy, raio_max_km=3.0):
+    """bairro de cada local de votação, a partir da sua coordenada.
+
+    Duas rotas, na ordem de preferência do §6:
+      1. **Dentro do polígono** — onde o IBGE publica malha de bairros, o local cai
+         literalmente dentro de um deles. É a atribuição exata.
+      2. **Centroide mais próximo** — para o que sobra (município sem malha, ou local
+         fora da mancha urbana mapeada), o bairro é o de centroide mais próximo,
+         desde que dentro de `raio_max_km`. Além disso o local fica sem bairro em vez
+         de ser forçado a um: um local a 20 km do bairro mais próximo não é dele.
+    """
+    caixas = []
+    if geo is not None:
+        for f in geo["features"]:
+            g = f["geometry"]
+            caixas.append((f["properties"]["bairro"], _caixa(g["coordinates"], g["type"]),
+                           g["coordinates"], g["type"]))
+
+    nomes_xy = {norm(b): b for b in xy}
+    saida, metodo = {}, {}
+    for _, r in locais.iterrows():
+        lat, lon = r["NR_LATITUDE"], r["NR_LONGITUDE"]
+        if pd.isna(lat) or pd.isna(lon):
+            continue
+        achou = None
+        for nome, (x0, y0, x1, y1), coords, tipo in caixas:
+            if x0 <= lon <= x1 and y0 <= lat <= y1 and _no_poligono(lon, lat, coords, tipo):
+                achou, m = nome, "polígono"
+                break
+        if achou is None and xy:
+            melhor, dmin = None, float("inf")
+            for b, (blon, blat) in xy.items():
+                if b == "Não classificado":
+                    continue
+                dx = (blon - lon) * math.cos(math.radians(lat)) * 111.32
+                dy = (blat - lat) * 111.32
+                d = math.hypot(dx, dy)
+                if d < dmin:
+                    melhor, dmin = b, d
+            if melhor is not None and dmin <= raio_max_km:
+                achou, m = melhor, "centroide"
+        if achou is None:
+            continue
+        # A malha nomeia o bairro; o painel usa o nome da tabela. Junção por nome
+        # normalizado, para as duas rotas caírem no mesmo universo de bairros.
+        achou = nomes_xy.get(norm(achou), achou)
+        saida[r["_k"]] = achou
+        metodo[r["_k"]] = m
+    return saida, metodo
+
+
+def montar_votes24_locais(df, apelido, numero, mun_nome, geoloc=None, bairro_de=None):
     """Camada de 2024 com quebra por local de votação.
 
     Cada seção já foi contada uma única vez na agregação; aqui só se soma por local,
-    de modo que o total do candidato reproduz o total oficial do município."""
+    de modo que o total do candidato reproduz o total oficial do município.
+
+    A chave do local é o par (zona, número): o TSE numera os locais DENTRO de cada
+    zona eleitoral, então o número sozinho colide entre zonas — em Belo Horizonte,
+    que tem dezenas de zonas, isso fundiria locais de bairros distintos.
+
+    `bairro_de` mapeia essa chave para o bairro; quando presente, a camada de 2024
+    passa a existir também por bairro, na mesma unidade da camada de 2022."""
     df["QT_VOTOS"] = pd.to_numeric(df["QT_VOTOS"], errors="coerce").fillna(0).astype(int)
     df["QT_SECOES"] = pd.to_numeric(df["QT_SECOES"], errors="coerce").fillna(0).astype(int)
+    df["_k"] = df["NR_ZONA"].astype(str) + "-" + df["NR_LOCAL_VOTACAO"].astype(str)
     nominal = df[(df["DS_CARGO"].map(norm) == "VEREADOR") &
                  (pd.to_numeric(df["SQ_CANDIDATO"], errors="coerce") > 0)].copy()
     if nominal.empty:
@@ -129,33 +245,39 @@ def montar_votes24_locais(df, apelido, numero, mun_nome):
 
     # ---- desempenho do candidato local a local ----
     meu = nominal[nominal["NR_VOTAVEL"].astype(str) == str(numero)]
-    por_local_tot = nominal.groupby("NR_LOCAL_VOTACAO", as_index=False).agg(
-        tot=("QT_VOTOS", "sum"))
-    info = df.drop_duplicates("NR_LOCAL_VOTACAO").set_index("NR_LOCAL_VOTACAO")
+    por_local_tot = nominal.groupby("_k")["QT_VOTOS"].sum()
+    info = df.drop_duplicates("_k").set_index("_k")
+    geoinfo = geoloc.drop_duplicates("_k").set_index("_k") if geoloc is not None else None
+    por_local_cand = {k: g for k, g in nominal.groupby("_k")}
 
     locais = []
-    for _, r in meu.groupby("NR_LOCAL_VOTACAO", as_index=False)["QT_VOTOS"].sum().iterrows():
-        L = r["NR_LOCAL_VOTACAO"]
-        tot = int(por_local_tot.loc[por_local_tot["NR_LOCAL_VOTACAO"] == L, "tot"].iloc[0])
-        no_local = (nominal[nominal["NR_LOCAL_VOTACAO"] == L]
+    for L, v in meu.groupby("_k")["QT_VOTOS"].sum().items():
+        tot = int(por_local_tot.get(L, 0))
+        no_local = (por_local_cand[L]
                     .groupby(["NR_VOTAVEL", "NM_VOTAVEL"], as_index=False)["QT_VOTOS"].sum()
                     .sort_values("QT_VOTOS", ascending=False).reset_index(drop=True))
         minha_pos = int(no_local[no_local["NR_VOTAVEL"].astype(str)
                                  == str(numero)].index[0]) + 1
+        g = geoinfo.loc[L] if geoinfo is not None and L in geoinfo.index else None
         locais.append({
-            "nr": str(L), "nome": str(info.loc[L, "NM_LOCAL_VOTACAO"]),
+            "nr": str(info.loc[L, "NR_LOCAL_VOTACAO"]),
+            "nome": str(info.loc[L, "NM_LOCAL_VOTACAO"]),
             "end": str(info.loc[L, "DS_LOCAL_VOTACAO_ENDERECO"]),
             "zona": str(info.loc[L, "NR_ZONA"]),
-            "v": int(r["QT_VOTOS"]), "tot": tot,
-            "pct": round(100 * r["QT_VOTOS"] / tot, 2) if tot else None,
+            "v": int(v), "tot": tot,
+            "pct": round(100 * v / tot, 2) if tot else None,
             "pos": minha_pos, "n": len(no_local),
+            "b": (bairro_de or {}).get(L),
+            "lat": None if g is None or pd.isna(g["NR_LATITUDE"]) else round(float(g["NR_LATITUDE"]), 5),
+            "lon": None if g is None or pd.isna(g["NR_LONGITUDE"]) else round(float(g["NR_LONGITUDE"]), 5),
+            "elei": None if g is None else int(g["QT_ELEITORES"]),
             "lideres": [{"nome": x["NM_VOTAVEL"], "nr": str(x["NR_VOTAVEL"]),
                          "v": int(x["QT_VOTOS"])}
                         for _, x in no_local.head(3).iterrows()],
         })
     locais.sort(key=lambda x: -x["v"])
 
-    n_loc = int(nominal["NR_LOCAL_VOTACAO"].nunique())
+    n_loc = int(nominal["_k"].nunique())
     top8 = sum(x["v"] for x in locais[:8])
     pref = df[(df["DS_CARGO"].map(norm) == "PREFEITO") &
               (pd.to_numeric(df["SQ_CANDIDATO"], errors="coerce") > 0)]
@@ -166,7 +288,7 @@ def montar_votes24_locais(df, apelido, numero, mun_nome):
         "granularidade": "local de votação",
         "total_nominal": tot_nom, "n_cands": len(tot_cand),
         "n_locais": n_loc,
-        "n_secoes": int(df.groupby("NR_LOCAL_VOTACAO")["QT_SECOES"].max().sum()),
+        "n_secoes": int(df.groupby("_k")["QT_SECOES"].max().sum()),
         "n_zonas": int(df["NR_ZONA"].nunique()),
         "candidato": {**linha(eu, pos - 1),
                       "locais": len(locais),
@@ -182,12 +304,156 @@ def montar_votes24_locais(df, apelido, numero, mun_nome):
     }
 
 
+def agregar_por_bairro(df, bairro_de, reg_por_bairro, numero):
+    """Votos de 2024 por bairro, somando os locais atribuídos a cada um.
+
+    Devolve (agregado do candidato, ranking dos mais votados em cada bairro). Cada
+    local entra uma única vez; locais sem coordenada — e por isso sem bairro — ficam
+    de fora do cruzamento e são contados no rodapé, em vez de rateados.
+    """
+    d = df.copy()
+    d["QT_VOTOS"] = pd.to_numeric(d["QT_VOTOS"], errors="coerce").fillna(0).astype(int)
+    d["_k"] = d["NR_ZONA"].astype(str) + "-" + d["NR_LOCAL_VOTACAO"].astype(str)
+    d["_b"] = d["_k"].map(bairro_de)
+    d = d[d["_b"].notna()]
+    nominal = d[(d["DS_CARGO"].map(norm) == "VEREADOR") &
+                (pd.to_numeric(d["SQ_CANDIDATO"], errors="coerce") > 0)]
+    if nominal.empty:
+        return {}, {}
+
+    agg, comp = {}, {}
+    for b, sub in nominal.groupby("_b"):
+        por_cand = (sub.groupby(["NR_VOTAVEL", "NM_VOTAVEL"], as_index=False)["QT_VOTOS"]
+                    .sum().sort_values("QT_VOTOS", ascending=False).reset_index(drop=True))
+        meu = por_cand[por_cand["NR_VOTAVEL"].astype(str) == str(numero)]
+        pos = int(meu.index[0]) + 1 if len(meu) else None
+        agg[b] = {
+            "cand": int(meu["QT_VOTOS"].iloc[0]) if len(meu) else 0,
+            "tot": int(por_cand["QT_VOTOS"].sum()),
+            "locais": int(sub["_k"].nunique()),
+            "reg": reg_por_bairro.get(b),
+            "pos": pos, "n": len(por_cand),
+        }
+        comp[b] = {
+            "pos": pos, "n": len(por_cand),
+            "top": [{"nome": r["NM_VOTAVEL"], "nr": str(r["NR_VOTAVEL"]),
+                     "v": int(r["QT_VOTOS"])} for _, r in por_cand.head(3).iterrows()],
+        }
+    return agg, comp
+
+
+# ---------------------------------------------------- sobreposição
+
+def spearman(a, b):
+    """Correlação de postos, sem scipy. Empates recebem o posto médio."""
+    n = len(a)
+    if n < 3:
+        return None
+    def postos(v):
+        ordem = sorted(range(n), key=lambda i: v[i])
+        r = [0.0] * n
+        i = 0
+        while i < n:
+            j = i
+            while j + 1 < n and v[ordem[j + 1]] == v[ordem[i]]:
+                j += 1
+            media = (i + j) / 2 + 1
+            for k in range(i, j + 1):
+                r[ordem[k]] = media
+            i = j + 1
+        return r
+    ra, rb = postos(a), postos(b)
+    ma, mb = sum(ra) / n, sum(rb) / n
+    num = sum((x - ma) * (y - mb) for x, y in zip(ra, rb))
+    den = math.sqrt(sum((x - ma) ** 2 for x in ra) * sum((y - mb) ** 2 for y in rb))
+    return round(num / den, 3) if den else None
+
+
+def montar_sobreposicao(votes22, bairros, votes24, nominal_por_bairro, apelido):
+    """Cruza as duas camadas no MESMO bairro e devolve os quatro quadrantes.
+
+    A camada de 2022 vem de setor censitário agregado a bairro; a de 2024, de local
+    de votação atribuído ao bairro pela coordenada. São duas malhas independentes
+    somadas na mesma unidade — não há nenhuma estimativa no meio.
+
+    O corte de cada eixo é a MEDIANA entre os bairros com dado nos dois anos: um
+    corte relativo, que é o que a leitura pede ("forte para este município"), e não
+    um limiar absoluto que dependeria do tamanho da cidade.
+    """
+    if votes22.get("suprimido") or not votes24 or not nominal_por_bairro:
+        return None
+    v22 = {r["Bairro"]: int(r["votos22"] or 0) for _, r in bairros.iterrows()}
+    linhas = []
+    for b, d in nominal_por_bairro.items():
+        if b == "Não classificado" or b not in v22:
+            continue
+        linhas.append({"b": b, "v22": v22[b], "v24": d["cand"], "tot24": d["tot"],
+                       "reg": d.get("reg"), "locais": d["locais"]})
+    linhas = [x for x in linhas if x["v22"] > 0 or x["v24"] > 0]
+    if len(linhas) < 4:
+        return None
+
+    def mediana(vs):
+        v = sorted(vs); n = len(v)
+        return v[n // 2] if n % 2 else (v[n // 2 - 1] + v[n // 2]) / 2
+    c22 = mediana([x["v22"] for x in linhas])
+    c24 = mediana([x["v24"] for x in linhas])
+
+    quad = {"comum": [], "cand": [], "lohanna": [], "vazio": []}
+    for x in linhas:
+        alto22, alto24 = x["v22"] > c22, x["v24"] > c24
+        x["q"] = ("comum" if alto22 and alto24 else "cand" if alto24 else
+                  "lohanna" if alto22 else "vazio")
+        quad[x["q"]].append(x)
+
+    # Reciprocidade: assimetria entre as duas bases, medida em share do município.
+    # Cada camada é normalizada pelo seu próprio total, senão a de maior volume
+    # dominaria a diferença por puro tamanho.
+    t22 = sum(x["v22"] for x in linhas) or 1
+    t24 = sum(x["v24"] for x in linhas) or 1
+    for x in linhas:
+        x["s22"] = round(100 * x["v22"] / t22, 2)
+        x["s24"] = round(100 * x["v24"] / t24, 2)
+        x["dif"] = round(x["s24"] - x["s22"], 2)
+
+    return {
+        "corte22": c22, "corte24": c24,
+        "n": len(linhas),
+        "total22": t22, "total24": t24,
+        "spearman": spearman([x["v22"] for x in linhas], [x["v24"] for x in linhas]),
+        "pontos": [[x["b"], x["v22"], x["v24"], x["q"], x["reg"]] for x in linhas],
+        "quadrantes": {k: sorted(v, key=lambda x: -(x["v22"] + x["v24"]))[:10]
+                       for k, v in quad.items()},
+        "n_quad": {k: len(v) for k, v in quad.items()},
+        # território do candidato onde a Lohanna é fraca, e vice-versa
+        "recip_cand": sorted([x for x in linhas if x["dif"] > 0],
+                             key=lambda x: -x["dif"])[:10],
+        "recip_loh": sorted([x for x in linhas if x["dif"] < 0],
+                            key=lambda x: x["dif"])[:10],
+    }
+
+
 def regioes_oficiais(geo):
     """bairro -> regional, a partir do campo `regiao` da malha do IBGE."""
     if not geo:
         return {}
     return {f["properties"]["bairro"]: f["properties"].get("regiao")
             for f in geo["features"] if f["properties"].get("regiao")}
+
+
+def carregar_locais22(mun_slug):
+    """Votos da Lohanna em 2022 por local de votação (ver `agregar_2022.py`)."""
+    for cand in (mun_slug, mun_slug.replace("del_rey", "del_rei"),
+                 mun_slug.replace("del_rei", "del_rey")):
+        p = f"dados/tse2022_locais/locais_{cand}.csv"
+        if os.path.exists(p):
+            d = pd.read_csv(p, sep=";", dtype=str)
+            for c in ("QT_VOTOS_NOMINAIS", "QT_VOTOS_LOHANNA"):
+                d[c] = pd.to_numeric(d[c], errors="coerce").fillna(0).astype(int)
+            d["_k"] = d["NR_ZONA"].astype(str) + "-" + d["NR_LOCAL_VOTACAO"].astype(str)
+            return d, p
+    return None, None
+
 
 
 def carregar_locais24(mun_slug):
@@ -359,7 +625,50 @@ def construir(mun_nome, apelido, numero=None, min_setores=None, suprimir22=None,
     bairros["lat"] = bairros["Bairro"].map(lambda b: round(xy[b][1], 5) if b in xy else None)
     regionais = agrega("_reg").rename(columns={"_reg": "regional"})
 
-    # ---- camada 2022 -----------------------------------------------------
+    # ---- camada 2022: votos reais do TSE, por local de votação ----------
+    # A coluna Votos_Candidato da tabela de aderência NÃO é o voto do setor: é o
+    # total do LOCAL DE VOTAÇÃO mais próximo, repetido em cada setor que o local
+    # atende (verificado setor a setor). Somá-la inflaria o voto de 3× a 11×.
+    # A camada vem, portanto, do próprio TSE — mesma unidade da camada de 2024.
+    loc22, p_loc22 = carregar_locais22(mun_slug)
+    geoloc22, p_geoloc22 = carregar_geo_locais(mun_nome, 2022)
+    v22_locais, geo22 = [], None
+    if loc22 is not None and geoloc22 is not None:
+        b22, m22 = atribuir_bairro_aos_locais(geoloc22, geo, xy)
+        gi = geoloc22.drop_duplicates("_k").set_index("_k")
+        por_bairro22 = defaultdict(int)
+        for _, r in loc22.iterrows():
+            b = b22.get(r["_k"])
+            if b:
+                por_bairro22[b] += int(r["QT_VOTOS_LOHANNA"])
+            g = gi.loc[r["_k"]] if r["_k"] in gi.index else None
+            v22_locais.append({
+                "nr": str(r["NR_LOCAL_VOTACAO"]), "zona": str(r["NR_ZONA"]),
+                "nome": str(r["NM_LOCAL_VOTACAO"]),
+                "end": str(r["DS_LOCAL_VOTACAO_ENDERECO"]),
+                "v": int(r["QT_VOTOS_LOHANNA"]), "tot": int(r["QT_VOTOS_NOMINAIS"]),
+                "pct": round(100 * r["QT_VOTOS_LOHANNA"] / r["QT_VOTOS_NOMINAIS"], 2)
+                       if r["QT_VOTOS_NOMINAIS"] else None,
+                "b": b,
+                "lat": None if g is None or pd.isna(g["NR_LATITUDE"]) else round(float(g["NR_LATITUDE"]), 5),
+                "lon": None if g is None or pd.isna(g["NR_LONGITUDE"]) else round(float(g["NR_LONGITUDE"]), 5),
+            })
+        v22_locais.sort(key=lambda x: -x["v"])
+        geo22 = {"locais": int(len(geoloc22)),
+                 "com_coord": int(geoloc22["NR_LATITUDE"].notna().sum()),
+                 "com_bairro": len(b22),
+                 "por_poligono": sum(1 for v in m22.values() if v == "polígono"),
+                 "por_centroide": sum(1 for v in m22.values() if v == "centroide")}
+        # O voto do bairro passa a ser a soma dos seus locais de votação; o índice
+        # de aderência continua vindo do setor censitário, que é a unidade dele.
+        bairros["votos22"] = bairros["Bairro"].map(por_bairro22).fillna(0).astype(int)
+        regionais["votos22"] = regionais["regional"].map(
+            bairros.groupby("regional")["votos22"].sum()).fillna(0).astype(int)
+        tab["_votos22"] = 0
+        total_tse22 = int(loc22["QT_VOTOS_LOHANNA"].sum())
+    else:
+        total_tse22 = None
+
     if suprimir22:
         # Município cujo Votos_Candidato está em escala incompatível com o setor
         # censitário. Suprimir é a aplicação literal da regra de não inventar dado:
@@ -368,7 +677,7 @@ def construir(mun_nome, apelido, numero=None, min_setores=None, suprimir22=None,
         bairros["votos22"] = 0
         regionais["votos22"] = 0
 
-    total22 = int(tab["_votos22"].sum())
+    total22 = total_tse22 if total_tse22 is not None else int(tab["_votos22"].sum())
     v22_reg = []
     for _, r in regionais.sort_values("votos22", ascending=False).iterrows():
         sub = (bairros[bairros["regional"] == r["regional"]]
@@ -378,11 +687,19 @@ def construir(mun_nome, apelido, numero=None, min_setores=None, suprimir22=None,
             "bairros": [{"b": x["Bairro"], "v": int(x["votos22"]), "s": int(x["setores"])}
                         for _, x in sub.iterrows() if x["votos22"] > 0],
         })
-    top_b = bairros.sort_values("votos22", ascending=False).iloc[0]
+    top_b = bairros[bairros["Bairro"] != "Não classificado"] \
+        .sort_values("votos22", ascending=False).iloc[0]
     votes22 = {
         "total": None if suprimir22 else total22,
         "suprimido": bool(suprimir22), "motivo": suprimir22,
-        "granularidade": "setor censitário",
+        "granularidade": ("local de votação" if total_tse22 is not None
+                          else "setor censitário"),
+        "cargo": "Deputada Estadual" if total_tse22 is not None else None,
+        "soma_bairros": int(bairros["votos22"].sum()) if total_tse22 is not None else None,
+        "locais": v22_locais[:60],
+        "n_locais": len(v22_locais),
+        "n_locais_com_voto": sum(1 for x in v22_locais if x["v"] > 0),
+        "geo": geo22,
         "regionais": [] if suprimir22 else v22_reg,
         "top_regional": None if suprimir22 else (v22_reg[0]["regional"] if v22_reg else None),
         "top_bairro": None if suprimir22 else {"nome": top_b["Bairro"],
@@ -399,11 +716,34 @@ def construir(mun_nome, apelido, numero=None, min_setores=None, suprimir22=None,
             col["votos22"] = None
 
     # ---- camada 2024 -----------------------------------------------------
-    votes24 = None
+    votes24, over, comp_bairro, geo_stats = None, None, None, None
     loc24, p_loc24 = carregar_locais24(mun_slug)
+    geoloc, p_geoloc = carregar_geo_locais(mun_nome)
+    bairro_de, metodo = ({}, {})
+    if geoloc is not None:
+        bairro_de, metodo = atribuir_bairro_aos_locais(geoloc, geo, xy)
+        geo_stats = {
+            "locais": int(len(geoloc)),
+            "com_coord": int(geoloc["NR_LATITUDE"].notna().sum()),
+            "com_bairro": len(bairro_de),
+            "por_poligono": sum(1 for v in metodo.values() if v == "polígono"),
+            "por_centroide": sum(1 for v in metodo.values() if v == "centroide"),
+            "fonte": os.path.basename(p_geoloc),
+        }
     if loc24 is not None and not sem2024:
-        votes24 = montar_votes24_locais(loc24, apelido, numero, mun_nome)
+        votes24 = montar_votes24_locais(loc24, apelido, numero, mun_nome,
+                                        geoloc, bairro_de)
         p_tse = p_loc24
+        if votes24 and bairro_de:
+            votes24["geo"] = geo_stats
+            npb, comp_bairro = agregar_por_bairro(loc24, bairro_de, reg_por_bairro,
+                                                  numero)
+            votes24["bairros"] = [
+                {"b": b, "v": d["cand"], "tot": d["tot"], "locais": d["locais"],
+                 "reg": d.get("reg"),
+                 "pct": round(100 * d["cand"] / d["tot"], 2) if d["tot"] else None}
+                for b, d in sorted(npb.items(), key=lambda kv: -kv[1]["cand"])]
+            over = montar_sobreposicao(votes22, bairros, votes24, npb, apelido)
     elif tse is not None and not sem2024:
         ver = tse[(tse["DS_CARGO"].map(norm) == "VEREADOR") & (tse["SQ_CANDIDATO"] > 0)].copy()
         ver = ver.sort_values("QT_VOTOS_TOTAL", ascending=False).reset_index(drop=True)
@@ -609,6 +949,7 @@ def construir(mun_nome, apelido, numero=None, min_setores=None, suprimir22=None,
                     for _, r in tab.iterrows()
                     if pd.notna(r["Latitude_Setor"]) and pd.notna(r["Longitude_Setor"])],
         "tops": tops, "votes22": votes22, "votes24": votes24,
+        "over": over, "comp_bairro": comp_bairro,
         "quebras": quebras, "mob": mob, "meta": meta,
     }
 
